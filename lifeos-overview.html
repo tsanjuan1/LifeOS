@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeOS — Architecture Blueprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #6366f1;
+    --accent2: #22d3ee;
+    --accent3: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --card: #13131e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+
+  .logo-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, #6366f1 60%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .stack-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+  .pill.featured { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.08); }
+
+  /* SECTIONS */
+  .section { margin-bottom: 4rem; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+    letter-spacing: 0.1em;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* CARDS */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: rgba(99,102,241,0.4); }
+
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.25rem;
+  }
+
+  .card-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* TECH STACK TABLE */
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .tech-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
+    vertical-align: top;
+  }
+
+  .tech-table tr:last-child td { border-bottom: none; }
+  .tech-table tr:hover td { background: rgba(99,102,241,0.03); }
+
+  .tech-name {
+    font-weight: 700;
+    color: var(--accent2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .tech-layer { color: var(--muted); font-size: 0.8rem; }
+
+  .tech-why {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-diagram {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .arch-layer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 0;
+    position: relative;
+  }
+
+  .arch-layer-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+  }
+
+  .arch-layer-content {
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--accent);
+    font-size: 1.2rem;
+    padding: 0.3rem 0;
+    font-family: monospace;
+  }
+
+  .arch-l1 { border-color: rgba(99,102,241,0.4); }
+  .arch-l1 .arch-layer-label { color: var(--accent); }
+  .arch-l2 { border-color: rgba(34,211,238,0.4); }
+  .arch-l2 .arch-layer-label { color: var(--accent2); }
+  .arch-l3 { border-color: rgba(16,185,129,0.4); }
+  .arch-l3 .arch-layer-label { color: var(--green); }
+
+  /* MODULES */
+  .module-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--module-color, var(--accent));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .module-card:hover { border-color: var(--module-color, var(--accent)); transform: translateY(-2px); }
+  .module-card:hover::before { opacity: 1; }
+
+  .module-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .module-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+  }
+
+  .module-features {
+    list-style: none;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .module-features li::before {
+    content: '→ ';
+    color: var(--module-color, var(--accent));
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* SCHEMA */
+  .schema-table {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .schema-header {
+    background: var(--surface);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .schema-name {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--accent2);
+    font-size: 0.85rem;
+  }
+
+  .schema-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .schema-fields {
+    padding: 0.5rem 0;
+  }
+
+  .schema-field {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.35rem 1rem;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    transition: background 0.1s;
+  }
+
+  .schema-field:hover { background: rgba(99,102,241,0.05); }
+
+  .field-name { color: #e2e8f0; min-width: 160px; }
+  .field-type { color: var(--accent3); min-width: 120px; }
+  .field-note { color: var(--muted); font-size: 0.7rem; }
+
+  .pk { color: var(--accent) !important; }
+  .fk { color: var(--green) !important; }
+
+  /* SCORE */
+  .score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) { .score-breakdown { grid-template-columns: repeat(2, 1fr); } }
+
+  .score-component {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .score-pct {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+
+  .score-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .score-bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .score-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  /* API ROUTES */
+  .api-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .api-group-header {
+    background: var(--surface);
+    padding: 0.6rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .api-route {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
+    transition: background 0.1s;
+  }
+
+  .api-route:last-child { border-bottom: none; }
+  .api-route:hover { background: rgba(99,102,241,0.04); }
+
+  .method {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    min-width: 42px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .method-get { background: rgba(16,185,129,0.15); color: var(--green); }
+  .method-post { background: rgba(99,102,241,0.15); color: var(--accent); }
+  .method-put { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .method-delete { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  .route-path { color: #94a3b8; }
+  .route-desc { color: var(--muted); font-size: 0.7rem; margin-left: auto; }
+
+  /* MVP */
+  .mvp-list { list-style: none; }
+  .mvp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(30,30,46,0.4);
+  }
+
+  .mvp-item:last-child { border-bottom: none; }
+
+  .mvp-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  .check-done { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
+  .check-later { border-color: var(--accent3); color: var(--accent3); background: rgba(245,158,11,0.1); }
+  .check-stub { border-color: var(--muted); color: var(--muted); }
+
+  .mvp-text { color: #94a3b8; line-height: 1.4; }
+  .mvp-text strong { color: #e2e8f0; }
+
+  /* CODE */
+  .code-block {
+    background: #0d0d16;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: #94a3b8;
+  }
+
+  .code-block .kw { color: #c084fc; }
+  .code-block .str { color: #86efac; }
+  .code-block .comment { color: #475569; font-style: italic; }
+  .code-block .fn { color: var(--accent2); }
+  .code-block .type { color: var(--accent3); }
+  .code-block .num { color: #fb923c; }
+
+  /* QUICK START */
+  .quickstart {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(34,211,238,0.04) 100%);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  .cmd-list { list-style: none; counter-reset: steps; }
+  .cmd-item {
+    counter-increment: steps;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
+  }
+
+  .cmd-item:last-child { border-bottom: none; }
+
+  .cmd-num {
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .cmd-content { flex: 1; }
+  .cmd-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; color: #fff; }
+  .cmd-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent2);
+    background: rgba(0,0,0,0.3);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; }
+  .tab {
+    padding: 0.4rem 1rem;
+    font-size: 0.78rem;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: transparent;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .tab.active, .tab:hover {
+    background: rgba(99,102,241,0.1);
+    border-color: rgba(99,102,241,0.4);
+    color: var(--accent);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Badges */
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .badge-precomp { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .badge-realtime { background: rgba(99,102,241,0.1); color: var(--accent); border: 1px solid rgba(99,102,241,0.2); }
+  .badge-cached { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-tag">// Architecture Blueprint v1.0</div>
+    <h1>LifeOS</h1>
+    <div class="subtitle">Personal Life Operating System · GitHub + Supabase + Next.js 14</div>
+    <div class="stack-pills">
+      <span class="pill featured">Next.js 14</span>
+      <span class="pill featured">Supabase</span>
+      <span class="pill featured">Drizzle ORM</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">TanStack Query</span>
+      <span class="pill">Tailwind + shadcn</span>
+      <span class="pill">Zod</span>
+      <span class="pill">Recharts</span>
+      <span class="pill">Vercel</span>
+      <span class="pill">pg_cron</span>
+    </div>
+  </header>
+
+  <!-- 1. TECH STACK -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Tech Stack</h2>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Choice</th>
+            <th>Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="tech-layer">Framework</td><td class="tech-name">Next.js 14 App Router</td><td class="tech-why">SSR dashboard, RSC for static parts, co-located API routes — one deploy</td></tr>
+          <tr><td class="tech-layer">Language</td><td class="tech-name">TypeScript</td><td class="tech-why">End-to-end type safety across all 15 DB entities</td></tr>
+          <tr><td class="tech-layer">Database</td><td class="tech-name">Supabase (PostgreSQL)</td><td class="tech-why">Auth + RLS + Storage + pg_cron in one managed service. You already use it.</td></tr>
+          <tr><td class="tech-layer">ORM</td><td class="tech-name">Drizzle ORM</td><td class="tech-why">Type-safe, SQL-like syntax, excellent Supabase support, lightweight</td></tr>
+          <tr><td class="tech-layer">Auth</td><td class="tech-name">Supabase Auth</td><td class="tech-why">Email + OAuth, JWT auto-managed, RLS ties directly to auth.uid()</td></tr>
+          <tr><td class="tech-layer">State</td><td class="tech-name">TanStack Query v5</td><td class="tech-why">Server state, background refetch, stale-while-revalidate, optimistic updates</td></tr>
+          <tr><td class="tech-layer">Forms</td><td class="tech-name">React Hook Form + Zod</td><td class="tech-why">Schema-first, shared with backend validation</td></tr>
+          <tr><td class="tech-layer">Styling</td><td class="tech-name">Tailwind + shadcn/ui</td><td class="tech-why">Rapid build, full control, zero runtime CSS</td></tr>
+          <tr><td class="tech-layer">Charts</td><td class="tech-name">Recharts</td><td class="tech-why">Composable, works within RSC boundaries via lazy import</td></tr>
+          <tr><td class="tech-layer">Storage</td><td class="tech-name">Supabase Storage</td><td class="tech-why">CSV/PDF import files, same project, integrated auth</td></tr>
+          <tr><td class="tech-layer">Deploy</td><td class="tech-name">Vercel + GitHub</td><td class="tech-why">Auto-deploy on push to main, preview deployments on PRs</td></tr>
+          <tr><td class="tech-layer">Jobs</td><td class="tech-name">pg_cron + Edge Functions</td><td class="tech-why">Score computation, summaries, recurring detection — scheduled</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. ARCHITECTURE -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Architecture</h2>
+    </div>
+    <div class="arch-diagram">
+      <div class="arch-layer arch-l1">
+        <div class="arch-layer-label">Browser / PWA</div>
+        <div class="arch-layer-content">Next.js App Router · TanStack Query · shadcn/ui · Recharts · Zustand (UI only)</div>
+      </div>
+      <div class="arch-arrow">↕ HTTPS</div>
+      <div class="arch-layer arch-l2">
+        <div class="arch-layer-label">API Layer — Next.js Route Handlers /api/v1/*</div>
+        <div class="arch-layer-content">Zod validation · Drizzle ORM · Supabase Auth middleware · File parsing (CSV) · Business logic</div>
+      </div>
+      <div class="arch-arrow">↕ Postgres wire protocol</div>
+      <div class="arch-layer arch-l3">
+        <div class="arch-layer-label">Supabase (Managed)</div>
+        <div class="arch-layer-content">PostgreSQL + RLS · Auth (JWT) · Storage (CSV/PDF) · pg_cron (scheduled jobs) · Edge Functions (async tasks)</div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;">
+      <div class="card">
+        <div class="card-title">RLS Security</div>
+        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Every table has Row Level Security. All queries auto-scoped to <code style="color:var(--accent2)">auth.uid()</code>. No manual filtering needed.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Monolith First</div>
+        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Single Next.js repo. Clean module boundaries in <code style="color:var(--accent2)">lib/</code>. Extract microservices only at Phase 3.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Hybrid Rendering</div>
+        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Server Components for layout/auth. Client Components for interactive widgets. RSC streaming for dashboard.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. MODULES -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>Product Modules</h2>
+    </div>
+    <div class="grid-4">
+      <div class="module-card" style="--module-color:#6366f1">
+        <div class="module-icon">📊</div>
+        <div class="module-name">Dashboard</div>
+        <ul class="module-features">
+          <li>Spending summary</li>
+          <li>Today's tasks</li>
+          <li>Habits status</li>
+          <li>Active goals</li>
+          <li>Insights panel</li>
+          <li>Personal score</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#10b981">
+        <div class="module-icon">💰</div>
+        <div class="module-name">Finance</div>
+        <ul class="module-features">
+          <li>CSV import</li>
+          <li>Manual entry</li>
+          <li>Multi-account</li>
+          <li>Auto-categorize</li>
+          <li>Subscription detect</li>
+          <li>Insights engine</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#f59e0b">
+        <div class="module-icon">✅</div>
+        <div class="module-name">Tasks</div>
+        <ul class="module-features">
+          <li>Priority levels</li>
+          <li>Due dates</li>
+          <li>Daily focus (top 3)</li>
+          <li>Link to goals</li>
+          <li>Completion rate</li>
+          <li>Streak tracking</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#8b5cf6">
+        <div class="module-icon">📝</div>
+        <div class="module-name">Notes</div>
+        <ul class="module-features">
+          <li>Quick capture</li>
+          <li>Tagging</li>
+          <li>Pin notes</li>
+          <li>→ Convert to task</li>
+          <li>Full-text search</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#ec4899">
+        <div class="module-icon">🔥</div>
+        <div class="module-name">Habits</div>
+        <ul class="module-features">
+          <li>Daily/weekly habits</li>
+          <li>One-tap logging</li>
+          <li>Streak tracking</li>
+          <li>Completion %</li>
+          <li>Link to goals</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#22d3ee">
+        <div class="module-icon">🎯</div>
+        <div class="module-name">Goals</div>
+        <ul class="module-features">
+          <li>Measurable targets</li>
+          <li>Milestones</li>
+          <li>On-track status</li>
+          <li>Link tasks + habits</li>
+          <li>Expected vs actual</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#fb923c">
+        <div class="module-icon">📋</div>
+        <div class="module-name">Summaries</div>
+        <ul class="module-features">
+          <li>Weekly auto-gen</li>
+          <li>Monthly auto-gen</li>
+          <li>Finance recap</li>
+          <li>Productivity recap</li>
+          <li>Goal progress</li>
+        </ul>
+      </div>
+      <div class="module-card" style="--module-color:#a78bfa">
+        <div class="module-icon">⭐</div>
+        <div class="module-name">Personal Score</div>
+        <ul class="module-features">
+          <li>Finance 30%</li>
+          <li>Productivity 30%</li>
+          <li>Habits 25%</li>
+          <li>Goals 15%</li>
+          <li>Daily computation</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. DATABASE SCHEMA -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Database Schema</h2>
+    </div>
+    <div class="tabs" id="schema-tabs">
+      <button class="tab active" onclick="showTab('schema','finance')">Finance</button>
+      <button class="tab" onclick="showTab('schema','productivity')">Productivity</button>
+      <button class="tab" onclick="showTab('schema','system')">System</button>
+    </div>
+
+    <div id="schema-finance" class="tab-content active">
+      <div class="grid-2">
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">accounts</span><span class="schema-count">8 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span><span class="field-note">gen_random_uuid()</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span><span class="field-note">→ auth.users</span></div>
+              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span><span class="field-note">"Chase Checking"</span></div>
+              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">checking|savings|credit|cash</span></div>
+              <div class="schema-field"><span class="field-name">currency</span><span class="field-type">text</span><span class="field-note">default 'USD'</span></div>
+              <div class="schema-field"><span class="field-name">balance</span><span class="field-type">numeric(12,2)</span><span class="field-note"></span></div>
+              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span><span class="field-note">default true</span></div>
+              <div class="schema-field"><span class="field-name">color</span><span class="field-type">text</span><span class="field-note">hex color for UI</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">subscriptions</span><span class="schema-count">10 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span><span class="field-note">"Netflix"</span></div>
+              <div class="schema-field"><span class="field-name">amount</span><span class="field-type">numeric(12,2)</span></div>
+              <div class="schema-field"><span class="field-name">frequency</span><span class="field-type">text</span><span class="field-note">monthly|yearly|weekly</span></div>
+              <div class="schema-field"><span class="field-name">next_date</span><span class="field-type">date</span></div>
+              <div class="schema-field"><span class="field-name">auto_detected</span><span class="field-type">boolean</span><span class="field-note">from recurring algo</span></div>
+              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">transactions</span><span class="schema-count">14 fields · critical</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name fk">account_id</span><span class="field-type">uuid FK</span><span class="field-note">→ accounts</span></div>
+              <div class="schema-field"><span class="field-name fk">category_id</span><span class="field-type">uuid FK?</span><span class="field-note">nullable</span></div>
+              <div class="schema-field"><span class="field-name">amount</span><span class="field-type">numeric(12,2)</span><span class="field-note">negative=expense</span></div>
+              <div class="schema-field"><span class="field-name">description</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">merchant</span><span class="field-type">text</span><span class="field-note">normalized name</span></div>
+              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, date DESC</span></div>
+              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">expense|income|transfer</span></div>
+              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
+              <div class="schema-field"><span class="field-name">is_recurring</span><span class="field-type">boolean</span></div>
+              <div class="schema-field"><span class="field-name fk">subscription_id</span><span class="field-type">uuid FK?</span></div>
+              <div class="schema-field"><span class="field-name">import_hash</span><span class="field-type">text</span><span class="field-note">SHA256 dedup · UNIQUE IDX</span></div>
+              <div class="schema-field"><span class="field-name">raw_data</span><span class="field-type">jsonb</span><span class="field-note">original CSV row</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="schema-productivity" class="tab-content">
+      <div class="grid-2">
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">tasks</span><span class="schema-count">12 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">status</span><span class="field-type">text</span><span class="field-note">pending|in_progress|done|cancelled</span></div>
+              <div class="schema-field"><span class="field-name">priority</span><span class="field-type">text</span><span class="field-note">low|medium|high|urgent</span></div>
+              <div class="schema-field"><span class="field-name">due_date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, due_date</span></div>
+              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK?</span><span class="field-note">→ goals</span></div>
+              <div class="schema-field"><span class="field-name">is_daily_focus</span><span class="field-type">boolean</span><span class="field-note">top 3 daily</span></div>
+              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
+              <div class="schema-field"><span class="field-name">completed_at</span><span class="field-type">timestamptz</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">notes</span><span class="schema-count">7 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text?</span></div>
+              <div class="schema-field"><span class="field-name">content</span><span class="field-type">text</span><span class="field-note">GIN FTS index</span></div>
+              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
+              <div class="schema-field"><span class="field-name">is_pinned</span><span class="field-type">boolean</span></div>
+              <div class="schema-field"><span class="field-name fk">converted_to_task_id</span><span class="field-type">uuid FK?</span><span class="field-note">track conversion</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">habits</span><span class="schema-count">9 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">frequency</span><span class="field-type">text</span><span class="field-note">daily|weekdays|weekly|custom</span></div>
+              <div class="schema-field"><span class="field-name">frequency_days</span><span class="field-type">integer[]</span><span class="field-note">[0-6] for custom</span></div>
+              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK?</span><span class="field-note">→ goals</span></div>
+              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">habit_logs</span><span class="schema-count">5 fields · UNIQUE(habit_id, date)</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
+              <div class="schema-field"><span class="field-name fk">habit_id</span><span class="field-type">uuid FK</span><span class="field-note">→ habits</span></div>
+              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, date DESC</span></div>
+              <div class="schema-field"><span class="field-name">completed</span><span class="field-type">boolean</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">goals</span><span class="schema-count">11 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
+              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">status</span><span class="field-type">text</span><span class="field-note">active|completed|paused</span></div>
+              <div class="schema-field"><span class="field-name">target_value</span><span class="field-type">numeric</span><span class="field-note">e.g. 10000</span></div>
+              <div class="schema-field"><span class="field-name">current_value</span><span class="field-type">numeric</span></div>
+              <div class="schema-field"><span class="field-name">unit</span><span class="field-type">text</span><span class="field-note">$, km, books, %</span></div>
+              <div class="schema-field"><span class="field-name">start_date</span><span class="field-type">date</span></div>
+              <div class="schema-field"><span class="field-name">target_date</span><span class="field-type">date</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="schema-system" class="tab-content">
+      <div class="grid-2">
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">insights</span><span class="schema-count">auto-generated</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">spending_spike|new_sub|etc</span></div>
+              <div class="schema-field"><span class="field-name">module</span><span class="field-type">text</span><span class="field-note">finance|tasks|habits|goals</span></div>
+              <div class="schema-field"><span class="field-name">severity</span><span class="field-type">text</span><span class="field-note">info|warning|alert</span></div>
+              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">body</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">data</span><span class="field-type">jsonb</span><span class="field-note">supporting raw data</span></div>
+              <div class="schema-field"><span class="field-name">is_dismissed</span><span class="field-type">boolean</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">personal_scores</span><span class="schema-count">UNIQUE(user_id, date)</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span></div>
+              <div class="schema-field"><span class="field-name">score</span><span class="field-type">numeric(5,2)</span><span class="field-note">0-100 composite</span></div>
+              <div class="schema-field"><span class="field-name">finance_score</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">productivity_score</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">habits_score</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">goals_score</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">breakdown</span><span class="field-type">jsonb</span><span class="field-note">weights + raw values</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">monthly_summaries</span><span class="schema-count">UNIQUE(user_id, year, month)</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name">year</span><span class="field-type">integer</span></div>
+              <div class="schema-field"><span class="field-name">month</span><span class="field-type">integer</span><span class="field-note">1-12</span></div>
+              <div class="schema-field"><span class="field-name">total_spent</span><span class="field-type">numeric(12,2)</span></div>
+              <div class="schema-field"><span class="field-name">total_income</span><span class="field-type">numeric(12,2)</span></div>
+              <div class="schema-field"><span class="field-name">savings_rate</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">habits_rate</span><span class="field-type">numeric(5,2)</span></div>
+              <div class="schema-field"><span class="field-name">goals_progress</span><span class="field-type">jsonb</span><span class="field-note">per-goal snapshot</span></div>
+              <div class="schema-field"><span class="field-name">data</span><span class="field-type">jsonb</span><span class="field-note">full breakdown</span></div>
+            </div>
+          </div>
+          <div class="schema-table">
+            <div class="schema-header"><span class="schema-name">goal_milestones</span><span class="schema-count">6 fields</span></div>
+            <div class="schema-fields">
+              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK</span><span class="field-note">→ goals CASCADE</span></div>
+              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
+              <div class="schema-field"><span class="field-name">target_value</span><span class="field-type">numeric</span></div>
+              <div class="schema-field"><span class="field-name">is_completed</span><span class="field-type">boolean</span></div>
+              <div class="schema-field"><span class="field-name">due_date</span><span class="field-type">date</span></div>
+              <div class="schema-field"><span class="field-name">sort_order</span><span class="field-type">integer</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. API -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>API Design</h2>
+    </div>
+    <div style="margin-bottom:0.5rem;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);">Base: /api/v1/* · Auth: Supabase JWT · Response: { data, error, meta }</div>
+    <div class="grid-2">
+      <div>
+        <div class="api-group">
+          <div class="api-group-header">Dashboard</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/dashboard</span><span class="route-desc">Full home view</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Finance · Transactions</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/transactions</span><span class="route-desc">?month&account&page</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/transactions</span><span class="route-desc">manual entry</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/transactions/:id</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/transactions/import</span><span class="route-desc">CSV upload</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/transactions/stats</span><span class="route-desc">?month</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Finance · Accounts</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/accounts</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/accounts</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/accounts/:id</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Insights</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/insights</span><span class="route-desc">?module&unread</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/insights/:id/dismiss</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Scores & Summaries</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/score/today</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/score/history</span><span class="route-desc">?days=30</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/summaries/weekly</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/summaries/monthly</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="api-group">
+          <div class="api-group-header">Tasks</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks</span><span class="route-desc">?status&due&priority</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/tasks</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/tasks/:id</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/tasks/:id/complete</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks/focus</span><span class="route-desc">top 3 daily</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks/stats</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Notes</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/notes</span><span class="route-desc">?search&tag&pinned</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/notes</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/notes/:id</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/notes/:id/convert-to-task</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Habits</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/today</span><span class="route-desc">habits + log status</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/habits</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/habits/:id/log</span><span class="route-desc">{ date, completed }</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/:id/streak</span></div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/stats</span><span class="route-desc">?days=30</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-header">Goals</div>
+          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/goals</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/goals</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/goals/:id/progress</span><span class="route-desc">{ current_value }</span></div>
+          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/goals/:id/milestones</span></div>
+          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/goals/:id/milestones/:mid/complete</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. SCORE -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Personal Score Formula</h2>
+    </div>
+    <div class="score-breakdown">
+      <div class="score-component">
+        <div class="score-pct" style="color:#10b981">30%</div>
+        <div class="score-label">Finance</div>
+        <div class="score-bar-wrap"><div class="score-bar" style="width:100%;background:#10b981"></div></div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
+          savings_rate ≥ 20%: +40<br>no overspend: +30<br>subs reviewed: +15<br>no anomalies: +15
+        </div>
+      </div>
+      <div class="score-component">
+        <div class="score-pct" style="color:#6366f1">30%</div>
+        <div class="score-label">Productivity</div>
+        <div class="score-bar-wrap"><div class="score-bar" style="width:100%;background:#6366f1"></div></div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
+          completion_rate × 60<br>focus done: +20<br>no overdue: +20<br>-5 per overdue task
+        </div>
+      </div>
+      <div class="score-component">
+        <div class="score-pct" style="color:#ec4899">25%</div>
+        <div class="score-label">Habits</div>
+        <div class="score-bar-wrap"><div class="score-bar" style="width:83%;background:#ec4899"></div></div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
+          (done/scheduled) × 70<br>streak bonus: min(30,<br>longest_streak × 2)
+        </div>
+      </div>
+      <div class="score-component">
+        <div class="score-pct" style="color:#22d3ee">15%</div>
+        <div class="score-label">Goals</div>
+        <div class="score-bar-wrap"><div class="score-bar" style="width:50%;background:#22d3ee"></div></div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
+          avg(progress%) active<br>on-track bonus: +20<br>if ahead of schedule
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;font-family:'DM Mono',monospace;font-size:0.8rem;color:#94a3b8;">
+      <span style="color:var(--accent2)">finalScore</span> = finance × <span style="color:var(--accent3)">0.30</span> + productivity × <span style="color:var(--accent3)">0.30</span> + habits × <span style="color:var(--accent3)">0.25</span> + goals × <span style="color:var(--accent3)">0.15</span>
+      <span style="color:var(--muted)">  // Computed nightly via pg_cron → stored in personal_scores</span>
+    </div>
+  </section>
+
+  <!-- 7. DASHBOARD AGGREGATION -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>Dashboard Aggregation Strategy</h2>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Strategy</th>
+            <th>Refresh</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Monthly spending totals</td><td><span class="badge badge-precomp">Precomputed</span> monthly_summaries</td><td>After import + nightly</td></tr>
+          <tr><td>Category breakdown</td><td><span class="badge badge-precomp">Precomputed</span> monthly_summaries.data JSONB</td><td>Same trigger</td></tr>
+          <tr><td>Personal score</td><td><span class="badge badge-precomp">Precomputed</span> personal_scores table</td><td>Nightly 23:50 pg_cron</td></tr>
+          <tr><td>Weekly summary</td><td><span class="badge badge-precomp">Precomputed</span> weekly_summaries table</td><td>Every Monday 00:05</td></tr>
+          <tr><td>Current month (live)</td><td><span class="badge badge-realtime">Real-time</span> aggregation query</td><td>Per request (fast, indexed)</td></tr>
+          <tr><td>Today's tasks</td><td><span class="badge badge-realtime">Real-time</span> query</td><td>Per request</td></tr>
+          <tr><td>Today's habits</td><td><span class="badge badge-realtime">Real-time</span> query</td><td>Per request</td></tr>
+          <tr><td>Active insights</td><td><span class="badge badge-realtime">Real-time</span> indexed query</td><td>Per request</td></tr>
+          <tr><td>Active goals</td><td><span class="badge badge-realtime">Real-time</span> query (max 5)</td><td>Per request</td></tr>
+          <tr><td>Frontend cache</td><td><span class="badge badge-cached">TanStack Query</span> staleTime: 2min</td><td>Auto-refetch on focus</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted);font-family:'DM Mono',monospace;">
+      All 7 real-time queries run in <strong style="color:#e2e8f0">Promise.all()</strong> → single dashboard request. Typical response: &lt;100ms with indexes in place.
+    </div>
+  </section>
+
+  <!-- 8. MVP -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2>MVP Scope</h2>
+    </div>
+    <div class="grid-3">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Week 1–3 · Build First</div>
+        <ul class="mvp-list">
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Supabase setup</strong> + schema migration</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Next.js scaffold</strong> + Supabase Auth</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Auth middleware</strong> → protect all /app routes</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Finance:</strong> manual entry + CSV import</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Finance:</strong> category assignment</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Tasks:</strong> full CRUD + complete action</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Habits:</strong> CRUD + daily logging</span></li>
+          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Dashboard:</strong> real data connected</span></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--accent3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Week 4–6 · Build Second</div>
+        <ul class="mvp-list">
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Goals module</strong> + progress tracking</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Notes</strong> + convert-to-task</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Recurring detection</strong> algorithm</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Auto-categorization</strong> engine</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Insights</strong> (spike + projection)</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Personal score</strong> basic computation</span></li>
+          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Weekly summary</strong> manual trigger</span></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Ignore / Stub</div>
+        <ul class="mvp-list">
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">PDF import → stub "coming soon"</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Multi-currency → store field, skip convert</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Bank API (Plaid) → ignore</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Budget enforcement → ignore</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Push notifications → ignore</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Sharing / collaboration → ignore</span></li>
+          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Mobile app (PWA works) → ignore</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2>Quick Start</h2>
+    </div>
+    <div class="quickstart">
+      <ul class="cmd-list">
+        <li class="cmd-item">
+          <span class="cmd-num">1</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Scaffold Next.js project</div>
+            <div class="cmd-code">npx create-next-app@latest lifeos --typescript --tailwind --app --src-dir</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">2</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Install dependencies</div>
+            <div class="cmd-code">npm install drizzle-orm @supabase/supabase-js @supabase/ssr @tanstack/react-query react-hook-form zod recharts papaparse && npm install drizzle-kit --save-dev && npx shadcn@latest init</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">3</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Create Supabase project → copy credentials to .env.local</div>
+            <div class="cmd-code">NEXT_PUBLIC_SUPABASE_URL=... · NEXT_PUBLIC_SUPABASE_ANON_KEY=... · DATABASE_URL=postgresql://...</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">4</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Run schema migration in Supabase SQL editor</div>
+            <div class="cmd-code">Paste the full schema SQL from lifeos-architecture.md → Run</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">5</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Enable RLS policies</div>
+            <div class="cmd-code">Run the RLS policy SQL block for all 14 tables</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">6</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Connect GitHub → Vercel for auto-deploy</div>
+            <div class="cmd-code">vercel.com → Import Git Repository → Add env vars → Deploy</div>
+          </div>
+        </li>
+        <li class="cmd-item">
+          <span class="cmd-num">7</span>
+          <div class="cmd-content">
+            <div class="cmd-label">Start building</div>
+            <div class="cmd-code">npm run dev → localhost:3000</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    LifeOS Architecture Blueprint · Generated for Supabase + GitHub stack · Ready to scaffold
+  </footer>
+
+</div>
+
+<script>
+function showTab(group, tab) {
+  // Hide all tab contents in group
+  document.querySelectorAll(`[id^="schema-"]`).forEach(el => {
+    el.classList.remove('active');
+  });
+  // Deactivate all tabs
+  document.querySelectorAll('#schema-tabs .tab').forEach(el => {
+    el.classList.remove('active');
+  });
+  // Show selected
+  document.getElementById(`schema-${tab}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Animate score bars on load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.querySelectorAll('.score-bar').forEach(bar => {
+      bar.style.transition = 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    });
+  }, 300);
+});
+</script>
+</body>
+</html>
