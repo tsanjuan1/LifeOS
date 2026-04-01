@@ -1,1301 +1,1392 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LifeOS — Architecture Blueprint</title>
+<title>LifeOS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
-
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --border: #1e1e2e;
-    --accent: #6366f1;
-    --accent2: #22d3ee;
-    --accent3: #f59e0b;
-    --green: #10b981;
-    --red: #ef4444;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --card: #13131e;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Syne', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: 
-      linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* HEADER */
-  header {
-    padding: 3rem 0 2rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 3rem;
-  }
-
-  .logo-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--accent);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-  }
-
-  h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 800;
-    line-height: 1;
-    background: linear-gradient(135deg, #fff 0%, #6366f1 60%, #22d3ee 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.75rem;
-  }
-
-  .subtitle {
-    color: var(--muted);
-    font-size: 1rem;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .stack-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
-  }
-
-  .pill {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 0.3rem 0.9rem;
-    font-size: 0.75rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-
-  .pill:hover { border-color: var(--accent); color: var(--accent); }
-  .pill.featured { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.08); }
-
-  /* SECTIONS */
-  .section { margin-bottom: 4rem; }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .section-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--accent);
-    background: rgba(99,102,241,0.1);
-    border: 1px solid rgba(99,102,241,0.3);
-    border-radius: 4px;
-    padding: 0.15rem 0.4rem;
-    letter-spacing: 0.1em;
-  }
-
-  h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  /* CARDS */
-  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-
-  @media (max-width: 768px) {
-    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.25rem;
-    transition: border-color 0.2s;
-  }
-
-  .card:hover { border-color: rgba(99,102,241,0.4); }
-
-  .card-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.75rem;
-  }
-
-  .card-value {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #fff;
-    margin-bottom: 0.25rem;
-  }
-
-  .card-sub {
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* TECH STACK TABLE */
-  .tech-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .tech-table th {
-    text-align: left;
-    padding: 0.6rem 1rem;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .tech-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(30,30,46,0.5);
-    vertical-align: top;
-  }
-
-  .tech-table tr:last-child td { border-bottom: none; }
-  .tech-table tr:hover td { background: rgba(99,102,241,0.03); }
-
-  .tech-name {
-    font-weight: 700;
-    color: var(--accent2);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-  }
-
-  .tech-layer { color: var(--muted); font-size: 0.8rem; }
-
-  .tech-why {
-    color: #94a3b8;
-    font-size: 0.8rem;
-    line-height: 1.5;
-  }
-
-  /* ARCHITECTURE DIAGRAM */
-  .arch-diagram {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .arch-layer {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 0;
-    position: relative;
-  }
-
-  .arch-layer-label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 0.5rem;
-  }
-
-  .arch-layer-content {
-    font-size: 0.8rem;
-    color: #94a3b8;
-  }
-
-  .arch-arrow {
-    text-align: center;
-    color: var(--accent);
-    font-size: 1.2rem;
-    padding: 0.3rem 0;
-    font-family: monospace;
-  }
-
-  .arch-l1 { border-color: rgba(99,102,241,0.4); }
-  .arch-l1 .arch-layer-label { color: var(--accent); }
-  .arch-l2 { border-color: rgba(34,211,238,0.4); }
-  .arch-l2 .arch-layer-label { color: var(--accent2); }
-  .arch-l3 { border-color: rgba(16,185,129,0.4); }
-  .arch-l3 .arch-layer-label { color: var(--green); }
-
-  /* MODULES */
-  .module-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .module-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--module-color, var(--accent));
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .module-card:hover { border-color: var(--module-color, var(--accent)); transform: translateY(-2px); }
-  .module-card:hover::before { opacity: 1; }
-
-  .module-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .module-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-    color: #fff;
-  }
-
-  .module-features {
-    list-style: none;
-    font-size: 0.75rem;
-    color: var(--muted);
-    line-height: 1.8;
-  }
-
-  .module-features li::before {
-    content: '→ ';
-    color: var(--module-color, var(--accent));
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* SCHEMA */
-  .schema-table {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-  }
-
-  .schema-header {
-    background: var(--surface);
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .schema-name {
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    color: var(--accent2);
-    font-size: 0.85rem;
-  }
-
-  .schema-count {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-  }
-
-  .schema-fields {
-    padding: 0.5rem 0;
-  }
-
-  .schema-field {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.35rem 1rem;
-    font-size: 0.75rem;
-    font-family: 'DM Mono', monospace;
-    transition: background 0.1s;
-  }
-
-  .schema-field:hover { background: rgba(99,102,241,0.05); }
-
-  .field-name { color: #e2e8f0; min-width: 160px; }
-  .field-type { color: var(--accent3); min-width: 120px; }
-  .field-note { color: var(--muted); font-size: 0.7rem; }
-
-  .pk { color: var(--accent) !important; }
-  .fk { color: var(--green) !important; }
-
-  /* SCORE */
-  .score-breakdown {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-
-  @media (max-width: 768px) { .score-breakdown { grid-template-columns: repeat(2, 1fr); } }
-
-  .score-component {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem;
-    text-align: center;
-  }
-
-  .score-pct {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
-  }
-
-  .score-label {
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.5rem;
-  }
-
-  .score-bar-wrap {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .score-bar {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 1s ease;
-  }
-
-  /* API ROUTES */
-  .api-group {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 0.75rem;
-  }
-
-  .api-group-header {
-    background: var(--surface);
-    padding: 0.6rem 1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .api-route {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    border-bottom: 1px solid rgba(30,30,46,0.5);
-    transition: background 0.1s;
-  }
-
-  .api-route:last-child { border-bottom: none; }
-  .api-route:hover { background: rgba(99,102,241,0.04); }
-
-  .method {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    min-width: 42px;
-    text-align: center;
-    letter-spacing: 0.05em;
-  }
-
-  .method-get { background: rgba(16,185,129,0.15); color: var(--green); }
-  .method-post { background: rgba(99,102,241,0.15); color: var(--accent); }
-  .method-put { background: rgba(245,158,11,0.15); color: var(--accent3); }
-  .method-delete { background: rgba(239,68,68,0.15); color: var(--red); }
-
-  .route-path { color: #94a3b8; }
-  .route-desc { color: var(--muted); font-size: 0.7rem; margin-left: auto; }
-
-  /* MVP */
-  .mvp-list { list-style: none; }
-  .mvp-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-    font-size: 0.85rem;
-    border-bottom: 1px solid rgba(30,30,46,0.4);
-  }
-
-  .mvp-item:last-child { border-bottom: none; }
-
-  .mvp-check {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1.5px solid;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 10px;
-    margin-top: 1px;
-  }
-
-  .check-done { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
-  .check-later { border-color: var(--accent3); color: var(--accent3); background: rgba(245,158,11,0.1); }
-  .check-stub { border-color: var(--muted); color: var(--muted); }
-
-  .mvp-text { color: #94a3b8; line-height: 1.4; }
-  .mvp-text strong { color: #e2e8f0; }
-
-  /* CODE */
-  .code-block {
-    background: #0d0d16;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.25rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    line-height: 1.7;
-    overflow-x: auto;
-    color: #94a3b8;
-  }
-
-  .code-block .kw { color: #c084fc; }
-  .code-block .str { color: #86efac; }
-  .code-block .comment { color: #475569; font-style: italic; }
-  .code-block .fn { color: var(--accent2); }
-  .code-block .type { color: var(--accent3); }
-  .code-block .num { color: #fb923c; }
-
-  /* QUICK START */
-  .quickstart {
-    background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(34,211,238,0.04) 100%);
-    border: 1px solid rgba(99,102,241,0.3);
-    border-radius: 16px;
-    padding: 2rem;
-  }
-
-  .cmd-list { list-style: none; counter-reset: steps; }
-  .cmd-item {
-    counter-increment: steps;
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(30,30,46,0.5);
-  }
-
-  .cmd-item:last-child { border-bottom: none; }
-
-  .cmd-num {
-    background: rgba(99,102,241,0.15);
-    border: 1px solid rgba(99,102,241,0.3);
-    color: var(--accent);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .cmd-content { flex: 1; }
-  .cmd-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; color: #fff; }
-  .cmd-code {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--accent2);
-    background: rgba(0,0,0,0.3);
-    padding: 0.4rem 0.75rem;
-    border-radius: 6px;
-    display: inline-block;
-  }
-
-  /* FOOTER */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 2rem 0;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* TABS */
-  .tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; }
-  .tab {
-    padding: 0.4rem 1rem;
-    font-size: 0.78rem;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    background: transparent;
-    font-family: 'Syne', sans-serif;
-    transition: all 0.15s;
-  }
-
-  .tab.active, .tab:hover {
-    background: rgba(99,102,241,0.1);
-    border-color: rgba(99,102,241,0.4);
-    color: var(--accent);
-  }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* Badges */
-  .badge {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-  }
-
-  .badge-precomp { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
-  .badge-realtime { background: rgba(99,102,241,0.1); color: var(--accent); border: 1px solid rgba(99,102,241,0.2); }
-  .badge-cached { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0f;--surface:#13131a;--surface2:#1a1a24;--border:#2a2a3a;--border2:#3a3a50;
+  --accent:#7c6af5;--accent-lo:rgba(124,106,245,0.12);
+  --gold:#f5a623;--gold-lo:rgba(245,166,35,0.12);
+  --green:#2dd4a0;--green-lo:rgba(45,212,160,0.12);
+  --red:#f56c6c;--red-lo:rgba(245,108,108,0.12);
+  --blue:#60a5fa;--blue-lo:rgba(96,165,250,0.12);
+  --text:#e8e8f0;--muted:#7a7a9a;--dim:#4a4a6a;
+  --r:10px;--rs:6px;--rl:14px;
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;min-height:100vh;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+button{cursor:pointer;font-family:var(--font)}
+input,textarea,select{font-family:var(--font)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.spin{animation:spin 1s linear infinite}
+.fade{animation:fadeIn 0.3s ease}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.logo{padding:22px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-text{font-weight:800;font-size:18px;letter-spacing:-0.02em}
+.nav-section{padding:14px 12px 8px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);margin-bottom:2px;font-size:14px;font-weight:500;color:var(--muted);background:transparent;border:1px solid transparent;width:100%;text-align:left;transition:all 0.15s;cursor:pointer}
+.nav-btn:hover{color:var(--text);background:var(--surface2)}
+.nav-btn.active{color:var(--text);background:var(--surface2);border-color:var(--border)}
+.nav-btn.active .nav-icon{color:var(--accent)}
+.nav-icon{font-size:16px;width:18px;text-align:center}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border);margin-top:auto}
+.quick-btn{width:100%;padding:10px;background:var(--accent-lo);border:1px solid rgba(124,106,245,0.3);border-radius:var(--rs);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.15s;margin-bottom:10px}
+.quick-btn:hover{background:var(--accent);color:#fff}
+.signout-btn{width:100%;padding:8px 12px;background:none;border:1px solid var(--border);border-radius:var(--rs);color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.15s}
+.signout-btn:hover{color:var(--red);border-color:var(--red)}
+
+/* MAIN */
+.main{margin-left:220px;min-height:100vh;background:var(--bg)}
+.page{max-width:960px;margin:0 auto;padding:32px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+
+/* LABEL */
+.label{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--dim)}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-0.02em;margin-top:4px}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;transition:border-color 0.15s}
+.card:hover{border-color:var(--border2)}
+.card-flush{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+
+/* BUTTON */
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-weight:600;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;transition:all 0.15s;font-size:13px;padding:8px 16px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{opacity:0.88}
+.btn-ghost{background:transparent;color:var(--muted);border-color:transparent}
+.btn-ghost:hover{color:var(--text);background:var(--surface2)}
+.btn-outline{background:transparent;color:var(--text);border-color:var(--border)}
+.btn-outline:hover{border-color:var(--border2)}
+.btn-danger{background:var(--red-lo);color:var(--red);border-color:rgba(245,108,108,0.3)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:5px;background:none;border:1px solid var(--border);border-radius:var(--rs);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s}
+.btn-icon:hover{border-color:var(--border2);color:var(--text)}
+.btn-icon.danger:hover{border-color:var(--red);color:var(--red)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* FORM */
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--muted)}
+.input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;color:var(--text);font-size:14px;width:100%;outline:none;transition:border-color 0.15s;font-family:var(--font)}
+.input:focus{border-color:var(--accent)}
+textarea.input{resize:vertical;min-height:80px;line-height:1.5}
+select.input{cursor:pointer}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:100%;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,0.6);animation:modalIn 0.2s ease}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700}
+.modal-body{padding:22px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.modal-wide{max-width:560px}
+
+/* TAGS */
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid;white-space:nowrap}
+.tag-purple{color:var(--accent);border-color:rgba(124,106,245,0.3);background:var(--accent-lo)}
+.tag-gold{color:var(--gold);border-color:rgba(245,166,35,0.3);background:var(--gold-lo)}
+.tag-green{color:var(--green);border-color:rgba(45,212,160,0.3);background:var(--green-lo)}
+.tag-red{color:var(--red);border-color:rgba(245,108,108,0.3);background:var(--red-lo)}
+.tag-blue{color:var(--blue);border-color:rgba(96,165,250,0.3);background:var(--blue-lo)}
+
+/* PROGRESS */
+.progress-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-bar{height:100%;border-radius:3px;transition:width 0.4s ease}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:var(--r);border:1px solid var(--border);width:fit-content;margin-bottom:18px}
+.tab{padding:6px 18px;border-radius:var(--rs);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
+.tab.active{background:var(--surface2);color:var(--text)}
+.tab:not(.active){background:transparent;color:var(--muted)}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.stat-value{font-size:26px;font-weight:800;margin:6px 0 2px}
+.stat-sub{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* LIST ROWS */
+.list-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.12s}
+.list-row:last-child{border-bottom:none}
+.list-row:hover{background:var(--surface2)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:52px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-desc{font-size:14px;margin-bottom:18px}
+
+/* ALERT */
+.alert{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--r);border:1px solid;margin-bottom:20px;font-size:13px}
+.alert-gold{background:var(--gold-lo);border-color:rgba(245,166,35,0.3);color:var(--text)}
+.alert-red{background:var(--red-lo);border-color:rgba(245,108,108,0.3);color:var(--text)}
+.alert-green{background:var(--green-lo);border-color:rgba(45,212,160,0.3);color:var(--text)}
+
+/* SPINNER */
+.spinner-wrap{display:flex;align-items:center;justify-content:center;padding:52px}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+
+/* AUTH PAGE */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg);position:relative}
+.auth-bg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(124,106,245,0.14),transparent)}
+.auth-box{width:100%;max-width:400px;position:relative;z-index:1}
+.auth-logo{text-align:center;margin-bottom:36px}
+.auth-logo-icon{width:52px;height:52px;background:var(--accent);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:30px;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.auth-form{display:flex;flex-direction:column;gap:14px}
+
+/* LOADING SCREEN */
+.loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);flex-direction:column;gap:16px}
+
+/* HOY specific */
+.brief-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
+.habit-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.habit-check.done{border-color:var(--green);background:var(--green)}
+.task-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.task-check:hover{border-color:var(--green)}
+
+/* NOTES GRID */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:border-color 0.15s;display:flex;flex-direction:column;gap:8px}
+.note-card:hover{border-color:var(--accent)}
+
+/* GOALS GRID */
+.goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+
+/* EMOJI PICKER */
+.emoji-grid{display:flex;flex-wrap:wrap;gap:6px}
+.emoji-btn{width:36px;height:36px;font-size:20px;border-radius:var(--rs);cursor:pointer;border:2px solid var(--border);background:var(--surface2);transition:all 0.15s}
+.emoji-btn.selected{border-color:var(--accent);background:var(--accent-lo)}
+
+/* MONTH INPUT */
+input[type=month]{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;cursor:pointer}
+input[type=month]:focus{border-color:var(--accent)}
+input[type=date]{color-scheme:dark}
+input[type=month]{color-scheme:dark}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* STREAK BADGE */
+.streak{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--gold-lo);border:1px solid rgba(245,166,35,0.3);border-radius:var(--rs);font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:600}
+
+/* CONFIG SCREEN */
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.config-row:last-child{border-bottom:none}
+
+@media(max-width:700px){
+  .sidebar{width:60px}
+  .logo-text,.nav-label,.quick-btn span,.signout-btn span{display:none}
+  .main{margin-left:60px}
+  .logo{padding:16px 14px}
+  .nav-section{padding:10px 8px}
+  .nav-btn{padding:10px;justify-content:center}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .brief-grid{grid-template-columns:1fr}
+  .page{padding:20px 16px}
+}
 </style>
 </head>
 <body>
-
-<div class="container">
-
-  <!-- HEADER -->
-  <header>
-    <div class="logo-tag">// Architecture Blueprint v1.0</div>
-    <h1>LifeOS</h1>
-    <div class="subtitle">Personal Life Operating System · GitHub + Supabase + Next.js 14</div>
-    <div class="stack-pills">
-      <span class="pill featured">Next.js 14</span>
-      <span class="pill featured">Supabase</span>
-      <span class="pill featured">Drizzle ORM</span>
-      <span class="pill">TypeScript</span>
-      <span class="pill">TanStack Query</span>
-      <span class="pill">Tailwind + shadcn</span>
-      <span class="pill">Zod</span>
-      <span class="pill">Recharts</span>
-      <span class="pill">Vercel</span>
-      <span class="pill">pg_cron</span>
-    </div>
-  </header>
-
-  <!-- 1. TECH STACK -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">01</span>
-      <h2>Tech Stack</h2>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-      <table class="tech-table">
-        <thead>
-          <tr>
-            <th>Layer</th>
-            <th>Choice</th>
-            <th>Justification</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td class="tech-layer">Framework</td><td class="tech-name">Next.js 14 App Router</td><td class="tech-why">SSR dashboard, RSC for static parts, co-located API routes — one deploy</td></tr>
-          <tr><td class="tech-layer">Language</td><td class="tech-name">TypeScript</td><td class="tech-why">End-to-end type safety across all 15 DB entities</td></tr>
-          <tr><td class="tech-layer">Database</td><td class="tech-name">Supabase (PostgreSQL)</td><td class="tech-why">Auth + RLS + Storage + pg_cron in one managed service. You already use it.</td></tr>
-          <tr><td class="tech-layer">ORM</td><td class="tech-name">Drizzle ORM</td><td class="tech-why">Type-safe, SQL-like syntax, excellent Supabase support, lightweight</td></tr>
-          <tr><td class="tech-layer">Auth</td><td class="tech-name">Supabase Auth</td><td class="tech-why">Email + OAuth, JWT auto-managed, RLS ties directly to auth.uid()</td></tr>
-          <tr><td class="tech-layer">State</td><td class="tech-name">TanStack Query v5</td><td class="tech-why">Server state, background refetch, stale-while-revalidate, optimistic updates</td></tr>
-          <tr><td class="tech-layer">Forms</td><td class="tech-name">React Hook Form + Zod</td><td class="tech-why">Schema-first, shared with backend validation</td></tr>
-          <tr><td class="tech-layer">Styling</td><td class="tech-name">Tailwind + shadcn/ui</td><td class="tech-why">Rapid build, full control, zero runtime CSS</td></tr>
-          <tr><td class="tech-layer">Charts</td><td class="tech-name">Recharts</td><td class="tech-why">Composable, works within RSC boundaries via lazy import</td></tr>
-          <tr><td class="tech-layer">Storage</td><td class="tech-name">Supabase Storage</td><td class="tech-why">CSV/PDF import files, same project, integrated auth</td></tr>
-          <tr><td class="tech-layer">Deploy</td><td class="tech-name">Vercel + GitHub</td><td class="tech-why">Auto-deploy on push to main, preview deployments on PRs</td></tr>
-          <tr><td class="tech-layer">Jobs</td><td class="tech-name">pg_cron + Edge Functions</td><td class="tech-why">Score computation, summaries, recurring detection — scheduled</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- 2. ARCHITECTURE -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">02</span>
-      <h2>Architecture</h2>
-    </div>
-    <div class="arch-diagram">
-      <div class="arch-layer arch-l1">
-        <div class="arch-layer-label">Browser / PWA</div>
-        <div class="arch-layer-content">Next.js App Router · TanStack Query · shadcn/ui · Recharts · Zustand (UI only)</div>
-      </div>
-      <div class="arch-arrow">↕ HTTPS</div>
-      <div class="arch-layer arch-l2">
-        <div class="arch-layer-label">API Layer — Next.js Route Handlers /api/v1/*</div>
-        <div class="arch-layer-content">Zod validation · Drizzle ORM · Supabase Auth middleware · File parsing (CSV) · Business logic</div>
-      </div>
-      <div class="arch-arrow">↕ Postgres wire protocol</div>
-      <div class="arch-layer arch-l3">
-        <div class="arch-layer-label">Supabase (Managed)</div>
-        <div class="arch-layer-content">PostgreSQL + RLS · Auth (JWT) · Storage (CSV/PDF) · pg_cron (scheduled jobs) · Edge Functions (async tasks)</div>
-      </div>
-    </div>
-    <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;">
-      <div class="card">
-        <div class="card-title">RLS Security</div>
-        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Every table has Row Level Security. All queries auto-scoped to <code style="color:var(--accent2)">auth.uid()</code>. No manual filtering needed.</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Monolith First</div>
-        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Single Next.js repo. Clean module boundaries in <code style="color:var(--accent2)">lib/</code>. Extract microservices only at Phase 3.</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Hybrid Rendering</div>
-        <div style="font-size:0.8rem;color:#94a3b8;line-height:1.5;">Server Components for layout/auth. Client Components for interactive widgets. RSC streaming for dashboard.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3. MODULES -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">03</span>
-      <h2>Product Modules</h2>
-    </div>
-    <div class="grid-4">
-      <div class="module-card" style="--module-color:#6366f1">
-        <div class="module-icon">📊</div>
-        <div class="module-name">Dashboard</div>
-        <ul class="module-features">
-          <li>Spending summary</li>
-          <li>Today's tasks</li>
-          <li>Habits status</li>
-          <li>Active goals</li>
-          <li>Insights panel</li>
-          <li>Personal score</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#10b981">
-        <div class="module-icon">💰</div>
-        <div class="module-name">Finance</div>
-        <ul class="module-features">
-          <li>CSV import</li>
-          <li>Manual entry</li>
-          <li>Multi-account</li>
-          <li>Auto-categorize</li>
-          <li>Subscription detect</li>
-          <li>Insights engine</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#f59e0b">
-        <div class="module-icon">✅</div>
-        <div class="module-name">Tasks</div>
-        <ul class="module-features">
-          <li>Priority levels</li>
-          <li>Due dates</li>
-          <li>Daily focus (top 3)</li>
-          <li>Link to goals</li>
-          <li>Completion rate</li>
-          <li>Streak tracking</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#8b5cf6">
-        <div class="module-icon">📝</div>
-        <div class="module-name">Notes</div>
-        <ul class="module-features">
-          <li>Quick capture</li>
-          <li>Tagging</li>
-          <li>Pin notes</li>
-          <li>→ Convert to task</li>
-          <li>Full-text search</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#ec4899">
-        <div class="module-icon">🔥</div>
-        <div class="module-name">Habits</div>
-        <ul class="module-features">
-          <li>Daily/weekly habits</li>
-          <li>One-tap logging</li>
-          <li>Streak tracking</li>
-          <li>Completion %</li>
-          <li>Link to goals</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#22d3ee">
-        <div class="module-icon">🎯</div>
-        <div class="module-name">Goals</div>
-        <ul class="module-features">
-          <li>Measurable targets</li>
-          <li>Milestones</li>
-          <li>On-track status</li>
-          <li>Link tasks + habits</li>
-          <li>Expected vs actual</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#fb923c">
-        <div class="module-icon">📋</div>
-        <div class="module-name">Summaries</div>
-        <ul class="module-features">
-          <li>Weekly auto-gen</li>
-          <li>Monthly auto-gen</li>
-          <li>Finance recap</li>
-          <li>Productivity recap</li>
-          <li>Goal progress</li>
-        </ul>
-      </div>
-      <div class="module-card" style="--module-color:#a78bfa">
-        <div class="module-icon">⭐</div>
-        <div class="module-name">Personal Score</div>
-        <ul class="module-features">
-          <li>Finance 30%</li>
-          <li>Productivity 30%</li>
-          <li>Habits 25%</li>
-          <li>Goals 15%</li>
-          <li>Daily computation</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- 4. DATABASE SCHEMA -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">04</span>
-      <h2>Database Schema</h2>
-    </div>
-    <div class="tabs" id="schema-tabs">
-      <button class="tab active" onclick="showTab('schema','finance')">Finance</button>
-      <button class="tab" onclick="showTab('schema','productivity')">Productivity</button>
-      <button class="tab" onclick="showTab('schema','system')">System</button>
-    </div>
-
-    <div id="schema-finance" class="tab-content active">
-      <div class="grid-2">
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">accounts</span><span class="schema-count">8 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span><span class="field-note">gen_random_uuid()</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span><span class="field-note">→ auth.users</span></div>
-              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span><span class="field-note">"Chase Checking"</span></div>
-              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">checking|savings|credit|cash</span></div>
-              <div class="schema-field"><span class="field-name">currency</span><span class="field-type">text</span><span class="field-note">default 'USD'</span></div>
-              <div class="schema-field"><span class="field-name">balance</span><span class="field-type">numeric(12,2)</span><span class="field-note"></span></div>
-              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span><span class="field-note">default true</span></div>
-              <div class="schema-field"><span class="field-name">color</span><span class="field-type">text</span><span class="field-note">hex color for UI</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">subscriptions</span><span class="schema-count">10 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span><span class="field-note">"Netflix"</span></div>
-              <div class="schema-field"><span class="field-name">amount</span><span class="field-type">numeric(12,2)</span></div>
-              <div class="schema-field"><span class="field-name">frequency</span><span class="field-type">text</span><span class="field-note">monthly|yearly|weekly</span></div>
-              <div class="schema-field"><span class="field-name">next_date</span><span class="field-type">date</span></div>
-              <div class="schema-field"><span class="field-name">auto_detected</span><span class="field-type">boolean</span><span class="field-note">from recurring algo</span></div>
-              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">transactions</span><span class="schema-count">14 fields · critical</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name fk">account_id</span><span class="field-type">uuid FK</span><span class="field-note">→ accounts</span></div>
-              <div class="schema-field"><span class="field-name fk">category_id</span><span class="field-type">uuid FK?</span><span class="field-note">nullable</span></div>
-              <div class="schema-field"><span class="field-name">amount</span><span class="field-type">numeric(12,2)</span><span class="field-note">negative=expense</span></div>
-              <div class="schema-field"><span class="field-name">description</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">merchant</span><span class="field-type">text</span><span class="field-note">normalized name</span></div>
-              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, date DESC</span></div>
-              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">expense|income|transfer</span></div>
-              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
-              <div class="schema-field"><span class="field-name">is_recurring</span><span class="field-type">boolean</span></div>
-              <div class="schema-field"><span class="field-name fk">subscription_id</span><span class="field-type">uuid FK?</span></div>
-              <div class="schema-field"><span class="field-name">import_hash</span><span class="field-type">text</span><span class="field-note">SHA256 dedup · UNIQUE IDX</span></div>
-              <div class="schema-field"><span class="field-name">raw_data</span><span class="field-type">jsonb</span><span class="field-note">original CSV row</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="schema-productivity" class="tab-content">
-      <div class="grid-2">
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">tasks</span><span class="schema-count">12 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">status</span><span class="field-type">text</span><span class="field-note">pending|in_progress|done|cancelled</span></div>
-              <div class="schema-field"><span class="field-name">priority</span><span class="field-type">text</span><span class="field-note">low|medium|high|urgent</span></div>
-              <div class="schema-field"><span class="field-name">due_date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, due_date</span></div>
-              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK?</span><span class="field-note">→ goals</span></div>
-              <div class="schema-field"><span class="field-name">is_daily_focus</span><span class="field-type">boolean</span><span class="field-note">top 3 daily</span></div>
-              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
-              <div class="schema-field"><span class="field-name">completed_at</span><span class="field-type">timestamptz</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">notes</span><span class="schema-count">7 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text?</span></div>
-              <div class="schema-field"><span class="field-name">content</span><span class="field-type">text</span><span class="field-note">GIN FTS index</span></div>
-              <div class="schema-field"><span class="field-name">tags</span><span class="field-type">text[]</span></div>
-              <div class="schema-field"><span class="field-name">is_pinned</span><span class="field-type">boolean</span></div>
-              <div class="schema-field"><span class="field-name fk">converted_to_task_id</span><span class="field-type">uuid FK?</span><span class="field-note">track conversion</span></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">habits</span><span class="schema-count">9 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name">name</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">frequency</span><span class="field-type">text</span><span class="field-note">daily|weekdays|weekly|custom</span></div>
-              <div class="schema-field"><span class="field-name">frequency_days</span><span class="field-type">integer[]</span><span class="field-note">[0-6] for custom</span></div>
-              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK?</span><span class="field-note">→ goals</span></div>
-              <div class="schema-field"><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">habit_logs</span><span class="schema-count">5 fields · UNIQUE(habit_id, date)</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">uuid FK</span></div>
-              <div class="schema-field"><span class="field-name fk">habit_id</span><span class="field-type">uuid FK</span><span class="field-note">→ habits</span></div>
-              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span><span class="field-note">IDX: user_id, date DESC</span></div>
-              <div class="schema-field"><span class="field-name">completed</span><span class="field-type">boolean</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">goals</span><span class="schema-count">11 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">uuid PK</span></div>
-              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">status</span><span class="field-type">text</span><span class="field-note">active|completed|paused</span></div>
-              <div class="schema-field"><span class="field-name">target_value</span><span class="field-type">numeric</span><span class="field-note">e.g. 10000</span></div>
-              <div class="schema-field"><span class="field-name">current_value</span><span class="field-type">numeric</span></div>
-              <div class="schema-field"><span class="field-name">unit</span><span class="field-type">text</span><span class="field-note">$, km, books, %</span></div>
-              <div class="schema-field"><span class="field-name">start_date</span><span class="field-type">date</span></div>
-              <div class="schema-field"><span class="field-name">target_date</span><span class="field-type">date</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="schema-system" class="tab-content">
-      <div class="grid-2">
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">insights</span><span class="schema-count">auto-generated</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name">type</span><span class="field-type">text</span><span class="field-note">spending_spike|new_sub|etc</span></div>
-              <div class="schema-field"><span class="field-name">module</span><span class="field-type">text</span><span class="field-note">finance|tasks|habits|goals</span></div>
-              <div class="schema-field"><span class="field-name">severity</span><span class="field-type">text</span><span class="field-note">info|warning|alert</span></div>
-              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">body</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">data</span><span class="field-type">jsonb</span><span class="field-note">supporting raw data</span></div>
-              <div class="schema-field"><span class="field-name">is_dismissed</span><span class="field-type">boolean</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">personal_scores</span><span class="schema-count">UNIQUE(user_id, date)</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name">date</span><span class="field-type">date</span></div>
-              <div class="schema-field"><span class="field-name">score</span><span class="field-type">numeric(5,2)</span><span class="field-note">0-100 composite</span></div>
-              <div class="schema-field"><span class="field-name">finance_score</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">productivity_score</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">habits_score</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">goals_score</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">breakdown</span><span class="field-type">jsonb</span><span class="field-note">weights + raw values</span></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">monthly_summaries</span><span class="schema-count">UNIQUE(user_id, year, month)</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name">year</span><span class="field-type">integer</span></div>
-              <div class="schema-field"><span class="field-name">month</span><span class="field-type">integer</span><span class="field-note">1-12</span></div>
-              <div class="schema-field"><span class="field-name">total_spent</span><span class="field-type">numeric(12,2)</span></div>
-              <div class="schema-field"><span class="field-name">total_income</span><span class="field-type">numeric(12,2)</span></div>
-              <div class="schema-field"><span class="field-name">savings_rate</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">habits_rate</span><span class="field-type">numeric(5,2)</span></div>
-              <div class="schema-field"><span class="field-name">goals_progress</span><span class="field-type">jsonb</span><span class="field-note">per-goal snapshot</span></div>
-              <div class="schema-field"><span class="field-name">data</span><span class="field-type">jsonb</span><span class="field-note">full breakdown</span></div>
-            </div>
-          </div>
-          <div class="schema-table">
-            <div class="schema-header"><span class="schema-name">goal_milestones</span><span class="schema-count">6 fields</span></div>
-            <div class="schema-fields">
-              <div class="schema-field"><span class="field-name fk">goal_id</span><span class="field-type">uuid FK</span><span class="field-note">→ goals CASCADE</span></div>
-              <div class="schema-field"><span class="field-name">title</span><span class="field-type">text</span></div>
-              <div class="schema-field"><span class="field-name">target_value</span><span class="field-type">numeric</span></div>
-              <div class="schema-field"><span class="field-name">is_completed</span><span class="field-type">boolean</span></div>
-              <div class="schema-field"><span class="field-name">due_date</span><span class="field-type">date</span></div>
-              <div class="schema-field"><span class="field-name">sort_order</span><span class="field-type">integer</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5. API -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">05</span>
-      <h2>API Design</h2>
-    </div>
-    <div style="margin-bottom:0.5rem;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);">Base: /api/v1/* · Auth: Supabase JWT · Response: { data, error, meta }</div>
-    <div class="grid-2">
-      <div>
-        <div class="api-group">
-          <div class="api-group-header">Dashboard</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/dashboard</span><span class="route-desc">Full home view</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Finance · Transactions</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/transactions</span><span class="route-desc">?month&account&page</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/transactions</span><span class="route-desc">manual entry</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/transactions/:id</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/transactions/import</span><span class="route-desc">CSV upload</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/transactions/stats</span><span class="route-desc">?month</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Finance · Accounts</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/accounts</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/accounts</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/accounts/:id</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Insights</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/insights</span><span class="route-desc">?module&unread</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/insights/:id/dismiss</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Scores & Summaries</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/score/today</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/score/history</span><span class="route-desc">?days=30</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/summaries/weekly</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/summaries/monthly</span></div>
-        </div>
-      </div>
-      <div>
-        <div class="api-group">
-          <div class="api-group-header">Tasks</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks</span><span class="route-desc">?status&due&priority</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/tasks</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/tasks/:id</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/tasks/:id/complete</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks/focus</span><span class="route-desc">top 3 daily</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/tasks/stats</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Notes</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/notes</span><span class="route-desc">?search&tag&pinned</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/notes</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/notes/:id</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/notes/:id/convert-to-task</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Habits</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/today</span><span class="route-desc">habits + log status</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/habits</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/habits/:id/log</span><span class="route-desc">{ date, completed }</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/:id/streak</span></div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/habits/stats</span><span class="route-desc">?days=30</span></div>
-        </div>
-        <div class="api-group">
-          <div class="api-group-header">Goals</div>
-          <div class="api-route"><span class="method method-get">GET</span><span class="route-path">/goals</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/goals</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/goals/:id/progress</span><span class="route-desc">{ current_value }</span></div>
-          <div class="api-route"><span class="method method-post">POST</span><span class="route-path">/goals/:id/milestones</span></div>
-          <div class="api-route"><span class="method method-put">PUT</span><span class="route-path">/goals/:id/milestones/:mid/complete</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 6. SCORE -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">06</span>
-      <h2>Personal Score Formula</h2>
-    </div>
-    <div class="score-breakdown">
-      <div class="score-component">
-        <div class="score-pct" style="color:#10b981">30%</div>
-        <div class="score-label">Finance</div>
-        <div class="score-bar-wrap"><div class="score-bar" style="width:100%;background:#10b981"></div></div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
-          savings_rate ≥ 20%: +40<br>no overspend: +30<br>subs reviewed: +15<br>no anomalies: +15
-        </div>
-      </div>
-      <div class="score-component">
-        <div class="score-pct" style="color:#6366f1">30%</div>
-        <div class="score-label">Productivity</div>
-        <div class="score-bar-wrap"><div class="score-bar" style="width:100%;background:#6366f1"></div></div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
-          completion_rate × 60<br>focus done: +20<br>no overdue: +20<br>-5 per overdue task
-        </div>
-      </div>
-      <div class="score-component">
-        <div class="score-pct" style="color:#ec4899">25%</div>
-        <div class="score-label">Habits</div>
-        <div class="score-bar-wrap"><div class="score-bar" style="width:83%;background:#ec4899"></div></div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
-          (done/scheduled) × 70<br>streak bonus: min(30,<br>longest_streak × 2)
-        </div>
-      </div>
-      <div class="score-component">
-        <div class="score-pct" style="color:#22d3ee">15%</div>
-        <div class="score-label">Goals</div>
-        <div class="score-bar-wrap"><div class="score-bar" style="width:50%;background:#22d3ee"></div></div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;text-align:left;line-height:1.6;">
-          avg(progress%) active<br>on-track bonus: +20<br>if ahead of schedule
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:1rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;font-family:'DM Mono',monospace;font-size:0.8rem;color:#94a3b8;">
-      <span style="color:var(--accent2)">finalScore</span> = finance × <span style="color:var(--accent3)">0.30</span> + productivity × <span style="color:var(--accent3)">0.30</span> + habits × <span style="color:var(--accent3)">0.25</span> + goals × <span style="color:var(--accent3)">0.15</span>
-      <span style="color:var(--muted)">  // Computed nightly via pg_cron → stored in personal_scores</span>
-    </div>
-  </section>
-
-  <!-- 7. DASHBOARD AGGREGATION -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">07</span>
-      <h2>Dashboard Aggregation Strategy</h2>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-      <table class="tech-table">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Strategy</th>
-            <th>Refresh</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Monthly spending totals</td><td><span class="badge badge-precomp">Precomputed</span> monthly_summaries</td><td>After import + nightly</td></tr>
-          <tr><td>Category breakdown</td><td><span class="badge badge-precomp">Precomputed</span> monthly_summaries.data JSONB</td><td>Same trigger</td></tr>
-          <tr><td>Personal score</td><td><span class="badge badge-precomp">Precomputed</span> personal_scores table</td><td>Nightly 23:50 pg_cron</td></tr>
-          <tr><td>Weekly summary</td><td><span class="badge badge-precomp">Precomputed</span> weekly_summaries table</td><td>Every Monday 00:05</td></tr>
-          <tr><td>Current month (live)</td><td><span class="badge badge-realtime">Real-time</span> aggregation query</td><td>Per request (fast, indexed)</td></tr>
-          <tr><td>Today's tasks</td><td><span class="badge badge-realtime">Real-time</span> query</td><td>Per request</td></tr>
-          <tr><td>Today's habits</td><td><span class="badge badge-realtime">Real-time</span> query</td><td>Per request</td></tr>
-          <tr><td>Active insights</td><td><span class="badge badge-realtime">Real-time</span> indexed query</td><td>Per request</td></tr>
-          <tr><td>Active goals</td><td><span class="badge badge-realtime">Real-time</span> query (max 5)</td><td>Per request</td></tr>
-          <tr><td>Frontend cache</td><td><span class="badge badge-cached">TanStack Query</span> staleTime: 2min</td><td>Auto-refetch on focus</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted);font-family:'DM Mono',monospace;">
-      All 7 real-time queries run in <strong style="color:#e2e8f0">Promise.all()</strong> → single dashboard request. Typical response: &lt;100ms with indexes in place.
-    </div>
-  </section>
-
-  <!-- 8. MVP -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">08</span>
-      <h2>MVP Scope</h2>
-    </div>
-    <div class="grid-3">
-      <div>
-        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Week 1–3 · Build First</div>
-        <ul class="mvp-list">
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Supabase setup</strong> + schema migration</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Next.js scaffold</strong> + Supabase Auth</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Auth middleware</strong> → protect all /app routes</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Finance:</strong> manual entry + CSV import</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Finance:</strong> category assignment</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Tasks:</strong> full CRUD + complete action</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Habits:</strong> CRUD + daily logging</span></li>
-          <li class="mvp-item"><span class="mvp-check check-done">✓</span><span class="mvp-text"><strong>Dashboard:</strong> real data connected</span></li>
-        </ul>
-      </div>
-      <div>
-        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--accent3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Week 4–6 · Build Second</div>
-        <ul class="mvp-list">
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Goals module</strong> + progress tracking</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Notes</strong> + convert-to-task</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Recurring detection</strong> algorithm</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Auto-categorization</strong> engine</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Insights</strong> (spike + projection)</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Personal score</strong> basic computation</span></li>
-          <li class="mvp-item"><span class="mvp-check check-later">→</span><span class="mvp-text"><strong>Weekly summary</strong> manual trigger</span></li>
-        </ul>
-      </div>
-      <div>
-        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Ignore / Stub</div>
-        <ul class="mvp-list">
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">PDF import → stub "coming soon"</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Multi-currency → store field, skip convert</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Bank API (Plaid) → ignore</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Budget enforcement → ignore</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Push notifications → ignore</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Sharing / collaboration → ignore</span></li>
-          <li class="mvp-item"><span class="mvp-check check-stub">○</span><span class="mvp-text">Mobile app (PWA works) → ignore</span></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- QUICK START -->
-  <section class="section">
-    <div class="section-header">
-      <span class="section-num">09</span>
-      <h2>Quick Start</h2>
-    </div>
-    <div class="quickstart">
-      <ul class="cmd-list">
-        <li class="cmd-item">
-          <span class="cmd-num">1</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Scaffold Next.js project</div>
-            <div class="cmd-code">npx create-next-app@latest lifeos --typescript --tailwind --app --src-dir</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">2</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Install dependencies</div>
-            <div class="cmd-code">npm install drizzle-orm @supabase/supabase-js @supabase/ssr @tanstack/react-query react-hook-form zod recharts papaparse && npm install drizzle-kit --save-dev && npx shadcn@latest init</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">3</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Create Supabase project → copy credentials to .env.local</div>
-            <div class="cmd-code">NEXT_PUBLIC_SUPABASE_URL=... · NEXT_PUBLIC_SUPABASE_ANON_KEY=... · DATABASE_URL=postgresql://...</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">4</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Run schema migration in Supabase SQL editor</div>
-            <div class="cmd-code">Paste the full schema SQL from lifeos-architecture.md → Run</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">5</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Enable RLS policies</div>
-            <div class="cmd-code">Run the RLS policy SQL block for all 14 tables</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">6</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Connect GitHub → Vercel for auto-deploy</div>
-            <div class="cmd-code">vercel.com → Import Git Repository → Add env vars → Deploy</div>
-          </div>
-        </li>
-        <li class="cmd-item">
-          <span class="cmd-num">7</span>
-          <div class="cmd-content">
-            <div class="cmd-label">Start building</div>
-            <div class="cmd-code">npm run dev → localhost:3000</div>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <footer>
-    LifeOS Architecture Blueprint · Generated for Supabase + GitHub stack · Ready to scaffold
-  </footer>
-
-</div>
-
+<div id="root"></div>
 <script>
-function showTab(group, tab) {
-  // Hide all tab contents in group
-  document.querySelectorAll(`[id^="schema-"]`).forEach(el => {
-    el.classList.remove('active');
-  });
-  // Deactivate all tabs
-  document.querySelectorAll('#schema-tabs .tab').forEach(el => {
-    el.classList.remove('active');
-  });
-  // Show selected
-  document.getElementById(`schema-${tab}`).classList.add('active');
-  event.target.classList.add('active');
+const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
+const { createClient } = supabase;
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// IMPORTANTE: Reemplaza estos valores con los de tu proyecto Supabase
+// Los encuentras en: Supabase → Project Settings → API
+const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co';
+const SUPABASE_KEY = 'TU_ANON_KEY_AQUI';
+
+// ─── SUPABASE CLIENT ─────────────────────────────────────────────────────────
+let sb;
+try {
+  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  sb = null;
 }
 
-// Animate score bars on load
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.querySelectorAll('.score-bar').forEach(bar => {
-      bar.style.transition = 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    });
-  }, 300);
-});
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const fmt = (d) => new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+const fmtMoney = (n) => `€${Number(n||0).toFixed(2)}`;
+const today = () => new Date().toISOString().split('T')[0];
+const thisMonth = () => new Date().toISOString().slice(0,7);
+const monthStart = (m) => m + '-01';
+const monthEnd = (m) => { const d = new Date(m+'-01'); d.setMonth(d.getMonth()+1); d.setDate(0); return d.toISOString().split('T')[0]; };
+const todayName = () => {
+  const d = new Date();
+  return d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}).replace(/^\w/,c=>c.toUpperCase());
+};
+
+// ─── CONTEXT ─────────────────────────────────────────────────────────────────
+const AppCtx = createContext(null);
+const useApp = () => useContext(AppCtx);
+
+// ─── ICONS (SVG inline) ──────────────────────────────────────────────────────
+const Icon = {
+  home: `<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`,
+  check: `<polyline points="20 6 9 17 4 12"/>`,
+  dollar: `<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>`,
+  target: `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>`,
+  note: `<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`,
+  plus: `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`,
+  logout: `<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>`,
+  x: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+  trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>`,
+  edit: `<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>`,
+  flame: `<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 3z"/>`,
+  alert: `<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+  search: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>`,
+  pin: `<line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V17z"/>`,
+  arrow: `<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>`,
+  settings: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>`,
+  circle: `<circle cx="12" cy="12" r="10"/>`,
+  zap: `<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`,
+};
+
+const Svg = ({ icon, size=16, color='currentColor', style={} }) =>
+  React.createElement('svg', {
+    width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+    stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+    style, dangerouslySetInnerHTML: { __html: Icon[icon] }
+  });
+
+// ─── UI COMPONENTS ────────────────────────────────────────────────────────────
+const Spinner = () => React.createElement('div', { className: 'spinner-wrap' },
+  React.createElement('div', { className: 'spinner' })
+);
+
+const ProgressBar = ({ value, max=100, color }) => {
+  const pct = Math.min(100, max > 0 ? Math.round((value/max)*100) : 0);
+  const c = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--gold)' : (color || 'var(--accent)');
+  return React.createElement('div', { className: 'progress-wrap' },
+    React.createElement('div', { className: 'progress-bar', style: { width: pct+'%', background: c } })
+  );
+};
+
+const Tag = ({ children, color='purple' }) =>
+  React.createElement('span', { className: `tag tag-${color}` }, children);
+
+const Empty = ({ icon, title, desc, onAction, actionLabel }) =>
+  React.createElement('div', { className: 'empty' },
+    React.createElement('div', { className: 'empty-icon' }, icon),
+    React.createElement('div', { className: 'empty-title' }, title),
+    React.createElement('div', { className: 'empty-desc' }, desc),
+    onAction && React.createElement('button', { className: 'btn btn-primary', onClick: onAction },
+      React.createElement(Svg, { icon: 'plus', size: 14 }), actionLabel
+    )
+  );
+
+const Modal = ({ open, onClose, title, children, wide }) => {
+  if (!open) return null;
+  return React.createElement('div', {
+    className: 'overlay',
+    onClick: e => e.target === e.currentTarget && onClose()
+  },
+    React.createElement('div', { className: `modal ${wide ? 'modal-wide' : ''}` },
+      React.createElement('div', { className: 'modal-header' },
+        React.createElement('div', { className: 'modal-title' }, title),
+        React.createElement('button', { className: 'btn-icon', onClick: onClose },
+          React.createElement(Svg, { icon: 'x', size: 16 })
+        )
+      ),
+      React.createElement('div', { className: 'modal-body' }, children)
+    )
+  );
+};
+
+const FG = ({ label, children }) =>
+  React.createElement('div', { className: 'form-group' },
+    label && React.createElement('label', { className: 'form-label' }, label),
+    children
+  );
+
+// ─── DATA LAYER ──────────────────────────────────────────────────────────────
+const DB = {
+  async goals(uid) {
+    const { data } = await sb.from('goals').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    return data || [];
+  },
+  async saveGoal(uid, g, id) {
+    const payload = { ...g, user_id: uid, target_value: Number(g.target_value||100), current_value: Number(g.current_value||0), deadline: g.deadline||null };
+    if (id) return sb.from('goals').update(payload).eq('id', id);
+    return sb.from('goals').insert(payload);
+  },
+  async deleteGoal(id) { return sb.from('goals').delete().eq('id', id); },
+  async updateGoalProgress(id, val, status) { return sb.from('goals').update({ current_value: val, status: status||undefined, updated_at: new Date().toISOString() }).eq('id', id); },
+
+  async tasks(uid, filter) {
+    let q = sb.from('tasks').select('*, goals(title)').eq('user_id', uid).neq('status','cancelled').order('created_at', { ascending: false });
+    if (filter && filter !== 'all') q = filter === 'done' ? q.eq('status','done') : q.eq('status', filter).neq('status','done');
+    else if (!filter || filter === 'all') q = q.neq('status','done');
+    const { data } = await q;
+    return data || [];
+  },
+  async saveTask(uid, t, id) {
+    const payload = { ...t, user_id: uid, goal_id: t.goal_id||null, due_date: t.due_date||null };
+    if (id) return sb.from('tasks').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id);
+    return sb.from('tasks').insert(payload);
+  },
+  async completeTask(id) { return sb.from('tasks').update({ status:'done', completed_at: new Date().toISOString() }).eq('id', id); },
+  async moveToday(id) { return sb.from('tasks').update({ status:'today' }).eq('id', id); },
+  async deleteTask(id) { return sb.from('tasks').delete().eq('id', id); },
+
+  async categories(uid) {
+    const { data } = await sb.from('categories').select('*').eq('user_id', uid).order('name');
+    return data || [];
+  },
+  async transactions(uid, month) {
+    const { data } = await sb.from('transactions').select('*, categories(name,icon,color)').eq('user_id', uid).gte('date', monthStart(month)).lte('date', monthEnd(month)).order('date', { ascending: false });
+    return data || [];
+  },
+  async saveTx(uid, t) { return sb.from('transactions').insert({ ...t, user_id: uid, amount: Number(t.amount), category_id: t.category_id||null }); },
+  async deleteTx(id) { return sb.from('transactions').delete().eq('id', id); },
+  async budgets(uid, month) {
+    const { data } = await sb.from('budgets').select('*, categories(name,icon,color)').eq('user_id', uid).eq('month', month);
+    return data || [];
+  },
+  async upsertBudget(uid, catId, month, amount) { return sb.from('budgets').upsert({ user_id: uid, category_id: catId, month, amount_limit: Number(amount) }); },
+
+  async habits(uid) {
+    const { data } = await sb.from('habits').select('*, goals(title)').eq('user_id', uid).eq('active', true).order('sort_order');
+    if (!data) return [];
+    const { data: logs } = await sb.from('habit_logs').select('habit_id, completed').eq('user_id', uid).eq('date', today());
+    const map = {};
+    (logs||[]).forEach(l => { map[l.habit_id] = l.completed; });
+    return data.map(h => ({ ...h, done_today: !!map[h.id] }));
+  },
+  async toggleHabit(uid, hid, done) {
+    await sb.from('habit_logs').upsert({ habit_id: hid, user_id: uid, date: today(), completed: done });
+    if (done) {
+      const { data: h } = await sb.from('habits').select('current_streak,longest_streak').eq('id', hid).single();
+      const s = (h?.current_streak||0) + 1;
+      await sb.from('habits').update({ current_streak: s, longest_streak: Math.max(s, h?.longest_streak||0) }).eq('id', hid);
+    } else {
+      await sb.from('habits').update({ current_streak: 0 }).eq('id', hid);
+    }
+  },
+  async saveHabit(uid, h, id) {
+    const payload = { ...h, user_id: uid, goal_id: h.goal_id||null };
+    if (id) return sb.from('habits').update(payload).eq('id', id);
+    return sb.from('habits').insert(payload);
+  },
+  async deleteHabit(id) { return sb.from('habits').update({ active: false }).eq('id', id); },
+
+  async notes(uid) {
+    const { data } = await sb.from('notes').select('*').eq('user_id', uid).order('pinned', { ascending: false }).order('updated_at', { ascending: false });
+    return data || [];
+  },
+  async saveNote(uid, n, id) {
+    const tags = typeof n.tags === 'string' ? n.tags.split(',').map(t=>t.trim()).filter(Boolean) : (n.tags||[]);
+    const payload = { ...n, tags, user_id: uid, updated_at: new Date().toISOString() };
+    if (id) return sb.from('notes').update(payload).eq('id', id);
+    return sb.from('notes').insert({ ...payload, created_at: new Date().toISOString() });
+  },
+  async deleteNote(id) { return sb.from('notes').delete().eq('id', id); },
+  async pinNote(id, pinned) { return sb.from('notes').update({ pinned }).eq('id', id); },
+
+  async brief(uid) {
+    const m = thisMonth();
+    const [tasks, habits, goals, txs, budgets] = await Promise.all([
+      DB.tasks(uid, 'all'),
+      DB.habits(uid),
+      DB.goals(uid),
+      DB.transactions(uid, m),
+      DB.budgets(uid, m),
+    ]);
+    const expenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+    const income = txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+    const totalBudget = budgets.reduce((s,b)=>s+Number(b.amount_limit),0);
+    const active = tasks.filter(t=>t.status!=='done');
+    const focus = scoreTasks(active, goals).slice(0,3);
+    const alerts = buildAlerts(active, goals, expenses, totalBudget);
+    return { focus, habits, goals: goals.filter(g=>g.status==='active'), expenses, income, totalBudget, budgetPct: totalBudget>0 ? Math.round(expenses/totalBudget*100) : null, alerts };
+  }
+};
+
+function scoreTasks(tasks, goals) {
+  const gmap = {}; goals.forEach(g=>{ gmap[g.id]=g; });
+  const now = new Date();
+  return [...tasks].sort((a,b) => {
+    let sa=0, sb=0;
+    const score = (t) => {
+      let s=0;
+      if (t.due_date) { const d=Math.ceil((new Date(t.due_date)-now)/86400000); if(d<=0)s+=100; else if(d<=1)s+=60; else if(d<=3)s+=30; }
+      s += {critical:50,high:25,low:5,none:0}[t.priority]||0;
+      if (t.goal_id && gmap[t.goal_id]) { s+=20; if(gmap[t.goal_id].deadline && Math.ceil((new Date(gmap[t.goal_id].deadline)-now)/86400000)<=14) s+=15; }
+      if (t.status==='today') s+=40;
+      return s;
+    };
+    return score(b)-score(a);
+  });
+}
+
+function buildAlerts(tasks, goals, expenses, totalBudget) {
+  const all = [];
+  if (totalBudget>0 && expenses/totalBudget>0.9) all.push({ type:'gold', msg:`Has usado el ${Math.round(expenses/totalBudget*100)}% del presupuesto mensual.` });
+  const overdue = tasks.filter(t=>t.due_date && new Date(t.due_date)<new Date());
+  if (overdue.length) all.push({ type:'red', msg:`Tienes ${overdue.length} tarea${overdue.length>1?'s':''} vencida${overdue.length>1?'s':''}.` });
+  const overdueGoals = goals.filter(g=>g.deadline && new Date(g.deadline)<new Date() && g.status==='active');
+  if (overdueGoals.length) all.push({ type:'red', msg:`"${overdueGoals[0].title}" ha superado su fecha límite.` });
+  return all.slice(0,1);
+}
+
+// ─── HOY PAGE ────────────────────────────────────────────────────────────────
+const PageHoy = () => {
+  const { user, refresh } = useApp();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { load(); }, [refresh]);
+  const load = async () => { setLoading(true); setData(await DB.brief(user.id)); setLoading(false); };
+
+  const doComplete = async (id) => { await DB.completeTask(id); load(); };
+  const doToggle = async (hid, done) => { await DB.toggleHabit(user.id, hid, !done); load(); };
+
+  if (loading) return React.createElement(Spinner);
+  const budgetColor = !data.budgetPct ? 'var(--green)' : data.budgetPct>=90 ? 'var(--red)' : data.budgetPct>=70 ? 'var(--gold)' : 'var(--green)';
+
+  return React.createElement('div', { className: 'fade' },
+    React.createElement('div', { className: 'page-header' },
+      React.createElement('div', null,
+        React.createElement('div', { className: 'label' }, 'Diario de control'),
+        React.createElement('h1', { className: 'page-title' }, todayName())
+      )
+    ),
+
+    // Alert
+    data.alerts.length > 0 && React.createElement('div', { className: `alert alert-${data.alerts[0].type}`, style:{marginBottom:20} },
+      React.createElement(Svg, { icon:'alert', size:16, color:`var(--${data.alerts[0].type})`, style:{flexShrink:0,marginTop:2} }),
+      React.createElement('span', null, data.alerts[0].msg)
+    ),
+
+    // Stats
+    React.createElement('div', { className: 'stats-grid' },
+      React.createElement('div', { className: 'stat-card' },
+        React.createElement('div', { className: 'label' }, `Presupuesto ${new Date().toLocaleDateString('es-ES',{month:'long'})}`),
+        React.createElement('div', { className: 'stat-value', style:{color:budgetColor} }, data.budgetPct!=null ? data.budgetPct+'%' : '—'),
+        React.createElement('div', { className: 'stat-sub' }, `${fmtMoney(data.expenses)} / ${data.totalBudget>0?fmtMoney(data.totalBudget):'sin presupuesto'}`),
+        data.totalBudget>0 && React.createElement('div',{style:{marginTop:8}}, React.createElement(ProgressBar,{value:data.expenses,max:data.totalBudget}))
+      ),
+      React.createElement('div', { className: 'stat-card' },
+        React.createElement('div', { className: 'label' }, 'Hábitos hoy'),
+        React.createElement('div', { className: 'stat-value', style:{color:data.habits.filter(h=>h.done_today).length===data.habits.length&&data.habits.length>0?'var(--green)':'var(--text)'} },
+          `${data.habits.filter(h=>h.done_today).length}/${data.habits.length}`
+        ),
+        data.habits.length>0 && React.createElement('div',{style:{marginTop:8}}, React.createElement(ProgressBar,{value:data.habits.filter(h=>h.done_today).length,max:data.habits.length,color:'var(--green)'}))
+      ),
+      React.createElement('div', { className: 'stat-card' },
+        React.createElement('div', { className: 'label' }, 'Metas activas'),
+        React.createElement('div', { className: 'stat-value', style:{color:'var(--accent)'} }, data.goals.length),
+        React.createElement('div', { className: 'stat-sub' }, `${data.goals.filter(g=>g.deadline).length} con fecha límite`)
+      )
+    ),
+
+    // Focus + habits
+    React.createElement('div', { className: 'brief-grid' },
+      // Tasks focus
+      React.createElement('div', null,
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:8,marginBottom:12} },
+          React.createElement(Svg,{icon:'zap',size:15,color:'var(--accent)'}),
+          React.createElement('span',{style:{fontWeight:700,fontSize:15}},'Foco del día'),
+          React.createElement('span',{className:'label',style:{marginLeft:'auto'}},'Priorizado automáticamente')
+        ),
+        React.createElement('div', { className:'card-flush' },
+          !data.focus.length
+            ? React.createElement(Empty,{icon:'✅',title:'Sin tareas activas',desc:'Añade tareas en el módulo Tareas'})
+            : data.focus.map((t,i)=>
+                React.createElement('div',{key:t.id,className:'list-row'},
+                  React.createElement('button',{
+                    className:'task-check',
+                    onClick:()=>doComplete(t.id),
+                    title:'Completar'
+                  }),
+                  React.createElement('div',{style:{flex:1,minWidth:0}},
+                    React.createElement('div',{style:{fontSize:14,fontWeight:500,marginBottom:4}},t.title),
+                    React.createElement('div',{style:{display:'flex',gap:5,flexWrap:'wrap'}},
+                      t.status==='today'&&React.createElement(Tag,{color:'green'},'Hoy'),
+                      t.priority!=='none'&&React.createElement(Tag,{color:{critical:'red',high:'gold',low:'blue'}[t.priority]},{critical:'⚡ Crítica',high:'↑ Alta',low:'↓ Baja'}[t.priority]),
+                      t.goals?.title&&React.createElement(Tag,{color:'purple'},t.goals.title),
+                      t.due_date&&React.createElement(Tag,{color:new Date(t.due_date)<new Date()?'red':'blue'},t.due_date)
+                    )
+                  )
+                )
+              )
+        )
+      ),
+
+      // Habits
+      React.createElement('div', null,
+        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:8,marginBottom:12} },
+          React.createElement(Svg,{icon:'flame',size:15,color:'var(--gold)'}),
+          React.createElement('span',{style:{fontWeight:700,fontSize:15}},'Hábitos de hoy')
+        ),
+        React.createElement('div', { className:'card-flush' },
+          !data.habits.length
+            ? React.createElement(Empty,{icon:'🔁',title:'Sin hábitos',desc:'Crea hábitos en Metas'})
+            : data.habits.map(h=>
+                React.createElement('div',{key:h.id,className:'list-row',style:{gap:12}},
+                  React.createElement('button',{
+                    className:`habit-check ${h.done_today?'done':''}`,
+                    onClick:()=>doToggle(h.id,h.done_today)
+                  }, h.done_today && React.createElement(Svg,{icon:'check',size:13,color:'var(--bg)',strokeWidth:3})),
+                  React.createElement('span',{style:{fontSize:20}},h.icon),
+                  React.createElement('span',{style:{flex:1,fontSize:14,fontWeight:500,textDecoration:h.done_today?'line-through':'none',color:h.done_today?'var(--muted)':'var(--text)'}},h.title),
+                  h.current_streak>1&&React.createElement('span',{className:'streak'},React.createElement(Svg,{icon:'flame',size:12,color:'var(--gold)'}),h.current_streak)
+                )
+              )
+        )
+      )
+    ),
+
+    // Active goals
+    data.goals.length>0 && React.createElement('div',{style:{marginTop:22}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:12}},
+        React.createElement(Svg,{icon:'target',size:15,color:'var(--accent)'}),
+        React.createElement('span',{style:{fontWeight:700,fontSize:15}},'Metas activas')
+      ),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}},
+        data.goals.map(g=>{
+          const pct=g.metric_type==='boolean'?(g.current_value?100:0):Math.min(100,g.target_value>0?Math.round(g.current_value/g.target_value*100):0);
+          return React.createElement('div',{key:g.id,className:'card',style:{padding:'14px 16px'}},
+            React.createElement('div',{style:{fontSize:13,fontWeight:600,marginBottom:8}},g.title),
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--muted)',fontFamily:'var(--mono)',marginBottom:5}},
+              React.createElement('span',null,g.current_value+(g.unit?` ${g.unit}`:''),` / `,g.target_value+(g.unit?` ${g.unit}`:'')),
+              React.createElement('span',{style:{color:'var(--accent)',fontWeight:700}},pct+'%')
+            ),
+            React.createElement(ProgressBar,{value:pct,max:100})
+          );
+        })
+      )
+    )
+  );
+};
+
+// ─── TAREAS PAGE ─────────────────────────────────────────────────────────────
+const PageTareas = () => {
+  const { user, refresh, setRefresh } = useApp();
+  const [tasks, setTasks] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [tab, setTab] = useState('all');
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ title:'', notes:'', priority:'none', status:'inbox', due_date:'', goal_id:'', energy_cost:'medium' });
+
+  useEffect(()=>{ load(); },[tab, refresh]);
+  const load = async () => {
+    const [t,g] = await Promise.all([DB.tasks(user.id, tab), DB.goals(user.id)]);
+    setTasks(t); setGoals(g.filter(g=>g.status==='active'));
+  };
+  const openNew = () => { setEditing(null); setForm({title:'',notes:'',priority:'none',status:'inbox',due_date:'',goal_id:'',energy_cost:'medium'}); setModal(true); };
+  const openEdit = (t) => { setEditing(t); setForm({title:t.title,notes:t.notes||'',priority:t.priority,status:t.status,due_date:t.due_date||'',goal_id:t.goal_id||'',energy_cost:t.energy_cost}); setModal(true); };
+  const save = async () => {
+    if (!form.title.trim()) return;
+    await DB.saveTask(user.id, form, editing?.id);
+    setModal(false); setRefresh(r=>r+1);
+  };
+  const complete = async (id) => { await DB.completeTask(id); setRefresh(r=>r+1); };
+  const moveToday = async (id) => { await DB.moveToday(id); setRefresh(r=>r+1); };
+  const del = async (id) => { if(confirm('¿Eliminar tarea?')){ await DB.deleteTask(id); setRefresh(r=>r+1); } };
+
+  const PCOLOR = {critical:'red',high:'gold',low:'blue',none:null};
+  const PLABEL = {critical:'⚡ Crítica',high:'↑ Alta',low:'↓ Baja',none:'—'};
+
+  return React.createElement('div',{className:'fade'},
+    React.createElement('div',{className:'page-header'},
+      React.createElement('div',null,
+        React.createElement('div',{className:'label'},'Módulo'),
+        React.createElement('h1',{className:'page-title'},'Tareas')
+      ),
+      React.createElement('button',{className:'btn btn-primary',onClick:openNew}, React.createElement(Svg,{icon:'plus',size:14}),' Nueva tarea')
+    ),
+    React.createElement('div',{className:'tabs'},
+      ['all','inbox','today','done'].map(t=>
+        React.createElement('button',{key:t,className:`tab ${tab===t?'active':''}`,onClick:()=>setTab(t)},
+          {all:'Todas',inbox:'Inbox',today:'Hoy',done:'Completadas'}[t]
+        )
+      )
+    ),
+    !tasks ? React.createElement(Spinner) :
+    !tasks.length ? React.createElement(Empty,{icon:'✅',title:'Sin tareas',desc:'Captura lo que tienes que hacer',onAction:openNew,actionLabel:'Nueva tarea'}) :
+    React.createElement('div',{className:'card-flush'},
+      tasks.map((t,i)=>
+        React.createElement('div',{key:t.id,className:'list-row',onClick:()=>openEdit(t),style:{cursor:'pointer'}},
+          React.createElement('button',{
+            className:'task-check',style:{flexShrink:0},
+            onClick:e=>{e.stopPropagation();t.status!=='done'&&complete(t.id);}
+          }, t.status==='done'&&React.createElement(Svg,{icon:'check',size:12,color:'var(--green)'})),
+          React.createElement('div',{style:{flex:1,minWidth:0}},
+            React.createElement('div',{style:{fontSize:14,fontWeight:500,marginBottom:4,textDecoration:t.status==='done'?'line-through':'none',color:t.status==='done'?'var(--muted)':'var(--text)'}},t.title),
+            React.createElement('div',{style:{display:'flex',gap:5,flexWrap:'wrap'}},
+              t.status==='today'&&React.createElement(Tag,{color:'green'},'Hoy'),
+              t.priority!=='none'&&React.createElement(Tag,{color:PCOLOR[t.priority]},PLABEL[t.priority]),
+              t.goals?.title&&React.createElement(Tag,{color:'purple'},t.goals.title),
+              t.due_date&&React.createElement(Tag,{color:new Date(t.due_date)<new Date()&&t.status!=='done'?'red':'blue'},t.due_date)
+            )
+          ),
+          React.createElement('div',{style:{display:'flex',gap:4},onClick:e=>e.stopPropagation()},
+            t.status==='inbox'&&React.createElement('button',{className:'btn-icon',title:'Mover a Hoy',onClick:()=>moveToday(t.id)},
+              React.createElement(Svg,{icon:'arrow',size:13})
+            ),
+            React.createElement('button',{className:'btn-icon danger',title:'Eliminar',onClick:()=>del(t.id)},
+              React.createElement(Svg,{icon:'trash',size:13})
+            )
+          )
+        )
+      )
+    ),
+    React.createElement(Modal,{open:modal,onClose:()=>setModal(false),title:editing?'Editar tarea':'Nueva tarea',wide:true},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement(FG,{label:'Título *'},
+          React.createElement('input',{className:'input',value:form.title,onChange:e=>setForm(f=>({...f,title:e.target.value})),placeholder:'¿Qué hay que hacer?',autoFocus:true})
+        ),
+        React.createElement(FG,{label:'Notas'},
+          React.createElement('textarea',{className:'input',value:form.notes,onChange:e=>setForm(f=>({...f,notes:e.target.value})),placeholder:'Detalles...',rows:2})
+        ),
+        React.createElement('div',{className:'grid-2'},
+          React.createElement(FG,{label:'Estado'},
+            React.createElement('select',{className:'input',value:form.status,onChange:e=>setForm(f=>({...f,status:e.target.value}))},
+              React.createElement('option',{value:'inbox'},'Inbox'),
+              React.createElement('option',{value:'today'},'Hoy')
+            )
+          ),
+          React.createElement(FG,{label:'Prioridad'},
+            React.createElement('select',{className:'input',value:form.priority,onChange:e=>setForm(f=>({...f,priority:e.target.value}))},
+              React.createElement('option',{value:'none'},'Sin prioridad'),
+              React.createElement('option',{value:'low'},'Baja'),
+              React.createElement('option',{value:'high'},'Alta'),
+              React.createElement('option',{value:'critical'},'Crítica')
+            )
+          ),
+          React.createElement(FG,{label:'Fecha límite'},
+            React.createElement('input',{type:'date',className:'input',value:form.due_date,onChange:e=>setForm(f=>({...f,due_date:e.target.value}))})
+          ),
+          React.createElement(FG,{label:'Energía'},
+            React.createElement('select',{className:'input',value:form.energy_cost,onChange:e=>setForm(f=>({...f,energy_cost:e.target.value}))},
+              React.createElement('option',{value:'low'},'Baja'),
+              React.createElement('option',{value:'medium'},'Media'),
+              React.createElement('option',{value:'high'},'Alta')
+            )
+          )
+        ),
+        React.createElement(FG,{label:'Vinculada a meta'},
+          React.createElement('select',{className:'input',value:form.goal_id,onChange:e=>setForm(f=>({...f,goal_id:e.target.value}))},
+            React.createElement('option',{value:''},'Sin meta'),
+            goals.map(g=>React.createElement('option',{key:g.id,value:g.id},g.title))
+          )
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setModal(false)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:save},'Guardar')
+        )
+      )
+    )
+  );
+};
+
+// ─── FINANZAS PAGE ───────────────────────────────────────────────────────────
+const PageFinanzas = () => {
+  const { user, refresh, setRefresh } = useApp();
+  const [month, setMonth] = useState(thisMonth());
+  const [txs, setTxs] = useState(null);
+  const [cats, setCats] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [tab, setTab] = useState('gastos');
+  const [txModal, setTxModal] = useState(false);
+  const [budgetModal, setBudgetModal] = useState(null);
+  const [budgetAmt, setBudgetAmt] = useState('');
+  const [form, setForm] = useState({description:'',amount:'',type:'expense',category_id:'',date:today(),note:''});
+
+  useEffect(()=>{ load(); },[month, refresh]);
+  const load = async () => {
+    const [t,c,b] = await Promise.all([DB.transactions(user.id,month), DB.categories(user.id), DB.budgets(user.id,month)]);
+    setTxs(t); setCats(c); setBudgets(b);
+  };
+
+  const saveTx = async () => {
+    if (!form.description||!form.amount) return;
+    await DB.saveTx(user.id, form);
+    setTxModal(false); setRefresh(r=>r+1);
+    setForm({description:'',amount:'',type:'expense',category_id:'',date:today(),note:''});
+  };
+  const delTx = async (id) => { if(confirm('¿Eliminar?')){ await DB.deleteTx(id); setRefresh(r=>r+1); } };
+  const saveBudget = async () => {
+    if(!budgetModal||!budgetAmt) return;
+    await DB.upsertBudget(user.id, budgetModal.id, month, budgetAmt);
+    setBudgetModal(null); setBudgetAmt(''); setRefresh(r=>r+1);
+  };
+
+  const expenses = (txs||[]).filter(t=>t.type==='expense');
+  const incomes = (txs||[]).filter(t=>t.type==='income');
+  const totalExp = expenses.reduce((s,t)=>s+Number(t.amount),0);
+  const totalInc = incomes.reduce((s,t)=>s+Number(t.amount),0);
+  const balance = totalInc - totalExp;
+  const budgetMap = {}; budgets.forEach(b=>{ budgetMap[b.category_id]=b; });
+  const byCat = {}; expenses.forEach(t=>{ const k=t.category_id||'none'; if(!byCat[k])byCat[k]={name:t.categories?.name||'Sin categoría',icon:t.categories?.icon||'📦',total:0}; byCat[k].total+=Number(t.amount); });
+  const expCats = cats.filter(c=>c.type!=='income');
+  const incCats = cats.filter(c=>c.type!=='expense');
+  const list = tab==='gastos' ? expenses : incomes;
+
+  return React.createElement('div',{className:'fade'},
+    React.createElement('div',{className:'page-header'},
+      React.createElement('div',null,
+        React.createElement('div',{className:'label'},'Módulo'),
+        React.createElement('h1',{className:'page-title'},'Finanzas')
+      ),
+      React.createElement('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+        React.createElement('input',{type:'month',value:month,onChange:e=>setMonth(e.target.value)}),
+        React.createElement('button',{className:'btn btn-primary',onClick:()=>setTxModal(true)}, React.createElement(Svg,{icon:'plus',size:14}),' Añadir')
+      )
+    ),
+    React.createElement('div',{className:'stats-grid'},
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'label'},'Gastos'),
+        React.createElement('div',{className:'stat-value',style:{color:'var(--red)'}},fmtMoney(totalExp))
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'label'},'Ingresos'),
+        React.createElement('div',{className:'stat-value',style:{color:'var(--green)'}},fmtMoney(totalInc))
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'label'},'Balance'),
+        React.createElement('div',{className:'stat-value',style:{color:balance>=0?'var(--green)':'var(--red)'}}, (balance>=0?'+':'')+fmtMoney(balance))
+      )
+    ),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 300px',gap:20}},
+      React.createElement('div',null,
+        React.createElement('div',{className:'tabs'},
+          ['gastos','ingresos'].map(t=>React.createElement('button',{key:t,className:`tab ${tab===t?'active':''}`,onClick:()=>setTab(t)},t.charAt(0).toUpperCase()+t.slice(1)))
+        ),
+        !txs ? React.createElement(Spinner) :
+        !list.length ? React.createElement(Empty,{icon:'💰',title:`Sin ${tab}`,desc:'Registra tu primera transacción',onAction:()=>setTxModal(true),actionLabel:'Añadir'}) :
+        React.createElement('div',{className:'card-flush'},
+          list.map(t=>
+            React.createElement('div',{key:t.id,className:'list-row'},
+              React.createElement('div',{style:{width:34,height:34,background:'var(--surface2)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,flexShrink:0}},t.categories?.icon||'📦'),
+              React.createElement('div',{style:{flex:1}},
+                React.createElement('div',{style:{fontSize:14,fontWeight:500}},t.description),
+                React.createElement('div',{style:{fontSize:11,color:'var(--muted)',fontFamily:'var(--mono)'}},t.date,' · ',t.categories?.name||'Sin categoría')
+              ),
+              React.createElement('div',{style:{fontWeight:700,fontFamily:'var(--mono)',color:t.type==='expense'?'var(--red)':'var(--green)'}},
+                (t.type==='expense'?'-':'+')+fmtMoney(t.amount)
+              ),
+              React.createElement('button',{className:'btn-icon danger',onClick:()=>delTx(t.id)},
+                React.createElement(Svg,{icon:'trash',size:13})
+              )
+            )
+          )
+        )
+      ),
+      React.createElement('div',null,
+        React.createElement('div',{style:{fontWeight:700,fontSize:15,marginBottom:14}},'Presupuesto por categoría'),
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+          expCats.filter(c=>byCat[c.id]?.total||budgetMap[c.id]).map(cat=>{
+            const b=budgetMap[cat.id]; const spent=byCat[cat.id]?.total||0; const limit=b?.amount_limit||0;
+            return React.createElement('div',{key:cat.id,className:'card',style:{padding:'12px 14px'}},
+              React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:6}},
+                React.createElement('span',null,cat.icon),
+                React.createElement('span',{style:{fontSize:13,fontWeight:600,flex:1}},cat.name),
+                React.createElement('button',{className:'btn-icon',style:{padding:3},onClick:()=>{setBudgetModal(cat);setBudgetAmt(limit.toString());}},
+                  React.createElement(Svg,{icon:'settings',size:11})
+                )
+              ),
+              React.createElement('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--muted)',fontFamily:'var(--mono)',marginBottom:5}},
+                React.createElement('span',null,fmtMoney(spent)),
+                React.createElement('span',null,limit>0?`/ ${fmtMoney(limit)}`:'sin límite')
+              ),
+              limit>0&&React.createElement(ProgressBar,{value:spent,max:limit})
+            );
+          }),
+          !Object.keys(byCat).length&&React.createElement('div',{style:{color:'var(--dim)',fontSize:13,textAlign:'center',padding:20}},'Sin datos este mes')
+        )
+      )
+    ),
+    // TX Modal
+    React.createElement(Modal,{open:txModal,onClose:()=>setTxModal(false),title:'Nueva transacción',wide:true},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement('div',{style:{display:'flex',gap:6}},
+          [{v:'expense',l:'💸 Gasto'},{v:'income',l:'💰 Ingreso'}].map(({v,l})=>
+            React.createElement('button',{key:v,onClick:()=>setForm(f=>({...f,type:v,category_id:''})),style:{flex:1,padding:'8px',fontSize:13,fontWeight:600,borderRadius:'var(--rs)',border:`1px solid ${form.type===v?'var(--accent)':'var(--border)'}`,background:form.type===v?'var(--accent-lo)':'var(--surface2)',color:form.type===v?'var(--accent)':'var(--muted)',cursor:'pointer',fontFamily:'var(--font)'}},l)
+          )
+        ),
+        React.createElement(FG,{label:'Descripción *'},
+          React.createElement('input',{className:'input',value:form.description,onChange:e=>setForm(f=>({...f,description:e.target.value})),placeholder:'En qué...',autoFocus:true})
+        ),
+        React.createElement('div',{className:'grid-2'},
+          React.createElement(FG,{label:'Importe (€) *'},
+            React.createElement('input',{type:'number',step:'0.01',className:'input',value:form.amount,onChange:e=>setForm(f=>({...f,amount:e.target.value})),placeholder:'0.00'})
+          ),
+          React.createElement(FG,{label:'Fecha'},
+            React.createElement('input',{type:'date',className:'input',value:form.date,onChange:e=>setForm(f=>({...f,date:e.target.value}))})
+          )
+        ),
+        React.createElement(FG,{label:'Categoría'},
+          React.createElement('select',{className:'input',value:form.category_id,onChange:e=>setForm(f=>({...f,category_id:e.target.value}))},
+            React.createElement('option',{value:''},'Sin categoría'),
+            (form.type==='expense'?expCats:incCats).map(c=>React.createElement('option',{key:c.id,value:c.id},c.icon+' '+c.name))
+          )
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setTxModal(false)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:saveTx},'Guardar')
+        )
+      )
+    ),
+    // Budget modal
+    React.createElement(Modal,{open:!!budgetModal,onClose:()=>setBudgetModal(null),title:`Presupuesto: ${budgetModal?.name}`},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement(FG,{label:'Límite mensual (€)'},
+          React.createElement('input',{type:'number',step:'0.01',className:'input',value:budgetAmt,onChange:e=>setBudgetAmt(e.target.value),autoFocus:true})
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setBudgetModal(null)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:saveBudget},'Guardar')
+        )
+      )
+    )
+  );
+};
+
+// ─── METAS PAGE ───────────────────────────────────────────────────────────────
+const EMOJIS = ['⭐','💪','📚','🏃','🧘','💰','✍️','🎯','🌱','🎨','💻','🤝','🍎','😴','🚶','📖','🏋️','🎵','🧠','✈️'];
+const CATLABEL = {financial:'💰 Financiero',health:'💪 Salud',learning:'📚 Aprendizaje',personal:'👤 Personal',work:'💼 Trabajo'};
+const CATCOLOR = {financial:'gold',health:'green',learning:'blue',personal:'purple',work:'red'};
+
+const PageMetas = () => {
+  const { user, refresh, setRefresh } = useApp();
+  const [goals, setGoals] = useState(null);
+  const [habits, setHabits] = useState(null);
+  const [tab, setTab] = useState('goals');
+  const [gModal, setGModal] = useState(false);
+  const [hModal, setHModal] = useState(false);
+  const [editG, setEditG] = useState(null);
+  const [editH, setEditH] = useState(null);
+  const [gForm, setGForm] = useState({title:'',description:'',category:'personal',metric_type:'boolean',target_value:100,current_value:0,unit:'',deadline:'',status:'active'});
+  const [hForm, setHForm] = useState({title:'',icon:'⭐',frequency:'daily',goal_id:''});
+  const [progressEdit, setProgressEdit] = useState({});
+
+  useEffect(()=>{ load(); },[refresh]);
+  const load = async () => {
+    const [g,h] = await Promise.all([DB.goals(user.id), DB.habits(user.id)]);
+    setGoals(g); setHabits(h);
+  };
+
+  const openNewG = () => { setEditG(null); setGForm({title:'',description:'',category:'personal',metric_type:'boolean',target_value:100,current_value:0,unit:'',deadline:'',status:'active'}); setGModal(true); };
+  const openEditG = (g) => { setEditG(g); setGForm({title:g.title,description:g.description||'',category:g.category,metric_type:g.metric_type,target_value:g.target_value,current_value:g.current_value,unit:g.unit||'',deadline:g.deadline||'',status:g.status}); setGModal(true); };
+  const saveG = async () => { if(!gForm.title.trim())return; await DB.saveGoal(user.id, gForm, editG?.id); setGModal(false); setRefresh(r=>r+1); };
+  const delG = async (id) => { if(confirm('¿Eliminar meta?')){ await DB.deleteGoal(id); setRefresh(r=>r+1); } };
+  const updateProgress = async (g, val) => { const s = Number(val)>=Number(g.target_value)?'completed':g.status; await DB.updateGoalProgress(g.id, val, s); setRefresh(r=>r+1); };
+  const toggleBool = async (g) => { await DB.updateGoalProgress(g.id, g.current_value?0:1, g.current_value?'active':'completed'); setRefresh(r=>r+1); };
+
+  const openNewH = () => { setEditH(null); setHForm({title:'',icon:'⭐',frequency:'daily',goal_id:''}); setHModal(true); };
+  const openEditH = (h) => { setEditH(h); setHForm({title:h.title,icon:h.icon,frequency:h.frequency,goal_id:h.goal_id||''}); setHModal(true); };
+  const saveH = async () => { if(!hForm.title.trim())return; await DB.saveHabit(user.id, hForm, editH?.id); setHModal(false); setRefresh(r=>r+1); };
+  const delH = async (id) => { if(confirm('¿Eliminar hábito?')){ await DB.deleteHabit(id); setRefresh(r=>r+1); } };
+  const toggle = async (hid, done) => { await DB.toggleHabit(user.id, hid, !done); setRefresh(r=>r+1); };
+
+  const activeGoals = (goals||[]).filter(g=>g.status==='active');
+
+  return React.createElement('div',{className:'fade'},
+    React.createElement('div',{className:'page-header'},
+      React.createElement('div',null,
+        React.createElement('div',{className:'label'},'Módulo'),
+        React.createElement('h1',{className:'page-title'},'Metas y Hábitos')
+      ),
+      React.createElement('button',{className:'btn btn-primary',onClick:tab==='goals'?openNewG:openNewH},
+        React.createElement(Svg,{icon:'plus',size:14}), tab==='goals'?' Nueva meta':' Nuevo hábito'
+      )
+    ),
+    React.createElement('div',{className:'tabs'},
+      [{v:'goals',l:'🎯 Metas'},{v:'habits',l:'🔁 Hábitos'}].map(t=>
+        React.createElement('button',{key:t.v,className:`tab ${tab===t.v?'active':''}`,onClick:()=>setTab(t.v)},t.l)
+      )
+    ),
+
+    // GOALS
+    tab==='goals' && (!goals ? React.createElement(Spinner) :
+      !goals.length ? React.createElement(Empty,{icon:'🎯',title:'Sin metas',desc:'Define qué quieres lograr',onAction:openNewG,actionLabel:'Primera meta'}) :
+      React.createElement('div',{className:'goals-grid'},
+        goals.map(g=>{
+          const pct=g.metric_type==='boolean'?(g.current_value?100:0):Math.min(100,g.target_value>0?Math.round(g.current_value/g.target_value*100):0);
+          return React.createElement('div',{key:g.id,className:'card'},
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}},
+              React.createElement('div',{style:{flex:1}},
+                React.createElement('div',{style:{display:'flex',gap:5,marginBottom:6,flexWrap:'wrap'}},
+                  React.createElement(Tag,{color:CATCOLOR[g.category]},CATLABEL[g.category]),
+                  g.status==='completed'&&React.createElement(Tag,{color:'green'},'✓ Completada'),
+                  g.status==='paused'&&React.createElement(Tag,{color:'red'},'Pausada')
+                ),
+                React.createElement('div',{style:{fontSize:15,fontWeight:700,marginBottom:4}},g.title),
+                g.description&&React.createElement('div',{style:{fontSize:13,color:'var(--muted)',lineHeight:1.4}},g.description)
+              ),
+              React.createElement('div',{style:{display:'flex',gap:4,marginLeft:8}},
+                React.createElement('button',{className:'btn-icon',onClick:()=>openEditG(g)},React.createElement(Svg,{icon:'edit',size:12})),
+                React.createElement('button',{className:'btn-icon danger',onClick:()=>delG(g.id)},React.createElement(Svg,{icon:'trash',size:12}))
+              )
+            ),
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',fontSize:12,color:'var(--muted)',fontFamily:'var(--mono)',marginBottom:6}},
+              React.createElement('span',null, g.metric_type==='boolean'?(g.current_value?'Completada':'En progreso'):`${g.current_value}${g.unit?' '+g.unit:''} / ${g.target_value}${g.unit?' '+g.unit:''}`),
+              React.createElement('span',{style:{color:'var(--accent)',fontWeight:700}},pct+'%')
+            ),
+            React.createElement(ProgressBar,{value:pct,max:100}),
+            g.deadline&&React.createElement('div',{style:{fontSize:11,color:new Date(g.deadline)<new Date()?'var(--red)':'var(--dim)',marginTop:6,fontFamily:'var(--mono)'}},
+              '📅 ',g.deadline
+            ),
+            g.status==='active'&&g.metric_type!=='boolean'&&React.createElement('div',{style:{display:'flex',gap:6,marginTop:10,alignItems:'center'}},
+              React.createElement('input',{type:'number',className:'input',style:{flex:1,padding:'6px 10px',fontSize:13},
+                defaultValue:g.current_value,key:`prog-${g.id}-${g.current_value}`,
+                onKeyDown:e=>{if(e.key==='Enter'){updateProgress(g,e.target.value);}}
+              }),
+              React.createElement('span',{style:{fontSize:11,color:'var(--dim)',whiteSpace:'nowrap'}},'Enter para guardar')
+            ),
+            g.status==='active'&&g.metric_type==='boolean'&&React.createElement('button',{
+              style:{marginTop:10,width:'100%',padding:'7px',borderRadius:'var(--rs)',border:`1px solid ${g.current_value?'var(--border)':'var(--green)'}`,background:g.current_value?'var(--surface2)':'var(--green-lo)',color:g.current_value?'var(--muted)':'var(--green)',cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'var(--font)'},
+              onClick:()=>toggleBool(g)
+            }, g.current_value?'Marcar como no completada':'✓ Completada')
+          );
+        })
+      )
+    ),
+
+    // HABITS
+    tab==='habits' && (!habits ? React.createElement(Spinner) :
+      !habits.length ? React.createElement(Empty,{icon:'🔁',title:'Sin hábitos',desc:'Los hábitos son la infraestructura de tus metas',onAction:openNewH,actionLabel:'Primer hábito'}) :
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        habits.map(h=>
+          React.createElement('div',{key:h.id,className:'card',style:{padding:'14px 18px'}},
+            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:12}},
+              React.createElement('button',{
+                className:`habit-check ${h.done_today?'done':''}`,
+                onClick:()=>toggle(h.id,h.done_today)
+              }, h.done_today&&React.createElement(Svg,{icon:'check',size:13,color:'var(--bg)',strokeWidth:3})),
+              React.createElement('span',{style:{fontSize:22}},h.icon),
+              React.createElement('div',{style:{flex:1}},
+                React.createElement('div',{style:{fontSize:15,fontWeight:600}},h.title),
+                React.createElement('div',{style:{fontSize:12,color:'var(--muted)',fontFamily:'var(--mono)',marginTop:2}},
+                  {daily:'Diario',weekdays:'Lun–Vie',weekends:'Fines de semana',custom:'Personalizado'}[h.frequency],
+                  h.goals?.title&&' · '+h.goals.title
+                )
+              ),
+              h.current_streak>0&&React.createElement('span',{className:'streak'},React.createElement(Svg,{icon:'flame',size:12,color:'var(--gold)'}),h.current_streak),
+              h.longest_streak>0&&React.createElement('span',{style:{fontSize:11,color:'var(--dim)',fontFamily:'var(--mono)'}},'Máx: ',h.longest_streak),
+              React.createElement('div',{style:{display:'flex',gap:4}},
+                React.createElement('button',{className:'btn-icon',onClick:()=>openEditH(h)},React.createElement(Svg,{icon:'edit',size:12})),
+                React.createElement('button',{className:'btn-icon danger',onClick:()=>delH(h.id)},React.createElement(Svg,{icon:'trash',size:12}))
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    // Goal Modal
+    React.createElement(Modal,{open:gModal,onClose:()=>setGModal(false),title:editG?'Editar meta':'Nueva meta',wide:true},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement(FG,{label:'Título *'},React.createElement('input',{className:'input',value:gForm.title,onChange:e=>setGForm(f=>({...f,title:e.target.value})),placeholder:'¿Qué quieres lograr?',autoFocus:true})),
+        React.createElement(FG,{label:'Descripción'},React.createElement('textarea',{className:'input',value:gForm.description,onChange:e=>setGForm(f=>({...f,description:e.target.value})),placeholder:'Por qué importa...',rows:2})),
+        React.createElement('div',{className:'grid-2'},
+          React.createElement(FG,{label:'Categoría'},
+            React.createElement('select',{className:'input',value:gForm.category,onChange:e=>setGForm(f=>({...f,category:e.target.value}))},
+              Object.entries(CATLABEL).map(([v,l])=>React.createElement('option',{key:v,value:v},l))
+            )
+          ),
+          React.createElement(FG,{label:'Tipo de métrica'},
+            React.createElement('select',{className:'input',value:gForm.metric_type,onChange:e=>setGForm(f=>({...f,metric_type:e.target.value}))},
+              React.createElement('option',{value:'boolean'},'Sí/No (completar)'),
+              React.createElement('option',{value:'numeric'},'Numérico (€, km, libros...)'),
+              React.createElement('option',{value:'percentage'},'Porcentaje')
+            )
+          )
+        ),
+        gForm.metric_type!=='boolean'&&React.createElement('div',{className:'grid-3'},
+          React.createElement(FG,{label:'Valor actual'},React.createElement('input',{type:'number',className:'input',value:gForm.current_value,onChange:e=>setGForm(f=>({...f,current_value:e.target.value}))})),
+          React.createElement(FG,{label:'Valor objetivo'},React.createElement('input',{type:'number',className:'input',value:gForm.target_value,onChange:e=>setGForm(f=>({...f,target_value:e.target.value}))})),
+          React.createElement(FG,{label:'Unidad'},React.createElement('input',{className:'input',value:gForm.unit,onChange:e=>setGForm(f=>({...f,unit:e.target.value})),placeholder:'€, km...'}))
+        ),
+        React.createElement('div',{className:'grid-2'},
+          React.createElement(FG,{label:'Fecha límite'},React.createElement('input',{type:'date',className:'input',value:gForm.deadline,onChange:e=>setGForm(f=>({...f,deadline:e.target.value}))})),
+          React.createElement(FG,{label:'Estado'},
+            React.createElement('select',{className:'input',value:gForm.status,onChange:e=>setGForm(f=>({...f,status:e.target.value}))},
+              React.createElement('option',{value:'active'},'Activa'),
+              React.createElement('option',{value:'paused'},'Pausada'),
+              React.createElement('option',{value:'completed'},'Completada')
+            )
+          )
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setGModal(false)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:saveG},'Guardar')
+        )
+      )
+    ),
+
+    // Habit Modal
+    React.createElement(Modal,{open:hModal,onClose:()=>setHModal(false),title:editH?'Editar hábito':'Nuevo hábito'},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement(FG,{label:'Nombre *'},React.createElement('input',{className:'input',value:hForm.title,onChange:e=>setHForm(f=>({...f,title:e.target.value})),placeholder:'Ej: Leer 20 minutos',autoFocus:true})),
+        React.createElement('div',null,
+          React.createElement('div',{className:'form-label',style:{marginBottom:8}},'Icono'),
+          React.createElement('div',{className:'emoji-grid'},
+            EMOJIS.map(e=>React.createElement('button',{key:e,className:`emoji-btn ${hForm.icon===e?'selected':''}`,onClick:()=>setHForm(f=>({...f,icon:e}))},e))
+          )
+        ),
+        React.createElement(FG,{label:'Frecuencia'},
+          React.createElement('select',{className:'input',value:hForm.frequency,onChange:e=>setHForm(f=>({...f,frequency:e.target.value}))},
+            React.createElement('option',{value:'daily'},'Diario'),
+            React.createElement('option',{value:'weekdays'},'Lunes a Viernes'),
+            React.createElement('option',{value:'weekends'},'Fines de semana')
+          )
+        ),
+        React.createElement(FG,{label:'Vinculado a meta (opcional)'},
+          React.createElement('select',{className:'input',value:hForm.goal_id,onChange:e=>setHForm(f=>({...f,goal_id:e.target.value}))},
+            React.createElement('option',{value:''},'Sin meta'),
+            activeGoals.map(g=>React.createElement('option',{key:g.id,value:g.id},g.title))
+          )
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setHModal(false)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:saveH},'Guardar')
+        )
+      )
+    )
+  );
+};
+
+// ─── NOTAS PAGE ───────────────────────────────────────────────────────────────
+const PageNotas = () => {
+  const { user, refresh, setRefresh } = useApp();
+  const [notes, setNotes] = useState(null);
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({title:'',content:'',pinned:false,tags:''});
+
+  useEffect(()=>{ load(); },[refresh]);
+  const load = async () => { setNotes(await DB.notes(user.id)); };
+  const openNew = () => { setEditing(null); setForm({title:'',content:'',pinned:false,tags:''}); setModal(true); };
+  const openEdit = (n) => { setEditing(n); setForm({title:n.title,content:n.content||'',pinned:n.pinned,tags:(n.tags||[]).join(', ')}); setModal(true); };
+  const save = async () => { if(!form.title.trim())return; await DB.saveNote(user.id,form,editing?.id); setModal(false); setRefresh(r=>r+1); };
+  const del = async (id) => { if(confirm('¿Eliminar nota?')){ await DB.deleteNote(id); setRefresh(r=>r+1); } };
+  const pin = async (n) => { await DB.pinNote(n.id, !n.pinned); setRefresh(r=>r+1); };
+
+  const filtered = (notes||[]).filter(n=>!search||(n.title+n.content).toLowerCase().includes(search.toLowerCase()));
+  const pinned = filtered.filter(n=>n.pinned);
+  const rest = filtered.filter(n=>!n.pinned);
+
+  return React.createElement('div',{className:'fade'},
+    React.createElement('div',{className:'page-header'},
+      React.createElement('div',null,
+        React.createElement('div',{className:'label'},'Módulo'),
+        React.createElement('h1',{className:'page-title'},'Notas')
+      ),
+      React.createElement('button',{className:'btn btn-primary',onClick:openNew},React.createElement(Svg,{icon:'plus',size:14}),' Nueva nota')
+    ),
+    React.createElement('div',{style:{position:'relative',marginBottom:18}},
+      React.createElement(Svg,{icon:'search',size:15,color:'var(--dim)',style:{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}),
+      React.createElement('input',{className:'input',style:{paddingLeft:36},value:search,onChange:e=>setSearch(e.target.value),placeholder:'Buscar notas...'})
+    ),
+    !notes ? React.createElement(Spinner) :
+    !filtered.length ? React.createElement(Empty,{icon:'📝',title:search?'Sin resultados':'Sin notas',desc:search?'Prueba otra búsqueda':'Captura ideas, referencias y contexto',onAction:!search?openNew:undefined,actionLabel:'Primera nota'}) :
+    React.createElement('div',null,
+      pinned.length>0&&React.createElement('div',{style:{marginBottom:20}},
+        React.createElement('div',{className:'label',style:{marginBottom:10}},'📌 Fijadas'),
+        React.createElement('div',{className:'notes-grid'},
+          pinned.map(n=>React.createElement(NoteCard,{key:n.id,note:n,onEdit:()=>openEdit(n),onDelete:()=>del(n.id),onPin:()=>pin(n)}))
+        )
+      ),
+      rest.length>0&&React.createElement('div',null,
+        pinned.length>0&&React.createElement('div',{className:'label',style:{marginBottom:10}},'Todas las notas'),
+        React.createElement('div',{className:'notes-grid'},
+          rest.map(n=>React.createElement(NoteCard,{key:n.id,note:n,onEdit:()=>openEdit(n),onDelete:()=>del(n.id),onPin:()=>pin(n)}))
+        )
+      )
+    ),
+    React.createElement(Modal,{open:modal,onClose:()=>setModal(false),title:editing?'Editar nota':'Nueva nota',wide:true},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        React.createElement(FG,{label:'Título *'},React.createElement('input',{className:'input',value:form.title,onChange:e=>setForm(f=>({...f,title:e.target.value})),placeholder:'Título...',autoFocus:true})),
+        React.createElement(FG,{label:'Contenido'},React.createElement('textarea',{className:'input',value:form.content,onChange:e=>setForm(f=>({...f,content:e.target.value})),placeholder:'Escribe aquí...',rows:7})),
+        React.createElement(FG,{label:'Tags (separados por coma)'},React.createElement('input',{className:'input',value:form.tags,onChange:e=>setForm(f=>({...f,tags:e.target.value})),placeholder:'trabajo, ideas...'})),
+        React.createElement('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:14,color:'var(--muted)'}},
+          React.createElement('input',{type:'checkbox',checked:form.pinned,onChange:e=>setForm(f=>({...f,pinned:e.target.checked})),style:{width:15,height:15,accentColor:'var(--accent)'}}),
+          'Fijar nota'
+        ),
+        React.createElement('div',{className:'modal-footer'},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setModal(false)},'Cancelar'),
+          React.createElement('button',{className:'btn btn-primary',onClick:save},'Guardar')
+        )
+      )
+    )
+  );
+};
+
+const NoteCard = ({ note, onEdit, onDelete, onPin }) =>
+  React.createElement('div',{className:'note-card',onClick:onEdit},
+    React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}},
+      React.createElement('div',{style:{fontWeight:700,fontSize:14,flex:1,marginRight:8,wordBreak:'break-word'}},note.title),
+      React.createElement('div',{style:{display:'flex',gap:3},onClick:e=>e.stopPropagation()},
+        React.createElement('button',{className:'btn-icon',style:{padding:3,border:'none',color:note.pinned?'var(--accent)':'var(--dim)'},onClick:onPin},React.createElement(Svg,{icon:'pin',size:12})),
+        React.createElement('button',{className:'btn-icon danger',style:{padding:3,border:'none'},onClick:onDelete},React.createElement(Svg,{icon:'trash',size:12}))
+      )
+    ),
+    note.content&&React.createElement('div',{style:{fontSize:13,color:'var(--muted)',lineHeight:1.5,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical'}},note.content),
+    (note.tags||[]).length>0&&React.createElement('div',{style:{display:'flex',gap:4,flexWrap:'wrap'}},
+      note.tags.map(t=>React.createElement(Tag,{key:t,color:'purple'},t))
+    ),
+    React.createElement('div',{style:{fontSize:11,color:'var(--dim)',fontFamily:'var(--mono)'}},
+      new Date(note.updated_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
+    )
+  );
+
+// ─── QUICK CAPTURE ────────────────────────────────────────────────────────────
+const QuickCapture = ({ open, onClose }) => {
+  const { user, setRefresh } = useApp();
+  const [text, setText] = useState('');
+  const [type, setType] = useState('task');
+  const [amount, setAmount] = useState('');
+  const [catId, setCatId] = useState('');
+  const [cats, setCats] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(()=>{ if(open) DB.categories(user.id).then(setCats); },[open]);
+
+  const save = async () => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      if (type==='task') await DB.saveTask(user.id, {title:text.trim(),status:'inbox',priority:'none',energy_cost:'medium'});
+      else if (type==='expense'||type==='income') {
+        const amt = parseFloat((amount||text).replace(/[^0-9.,]/g,'').replace(',','.'));
+        if(isNaN(amt)) throw new Error('Importe inválido');
+        await DB.saveTx(user.id, {description:text.trim(),amount:amt,type,category_id:catId||null,date:today()});
+      } else await DB.saveNote(user.id, {title:text.trim().slice(0,80),content:text.trim(),pinned:false,tags:[]});
+      setRefresh(r=>r+1);
+      setText(''); setAmount(''); setCatId('');
+      onClose();
+    } catch(e) { alert(e.message); }
+    setSaving(false);
+  };
+
+  const expCats = cats.filter(c=>c.type!=='income');
+  const incCats = cats.filter(c=>c.type!=='expense');
+
+  return React.createElement(Modal,{open,onClose,title:'Captura rápida'},
+    React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+      React.createElement('div',{style:{display:'flex',gap:5}},
+        [{v:'task',l:'✅ Tarea'},{v:'expense',l:'💸 Gasto'},{v:'income',l:'💰 Ingreso'},{v:'note',l:'📝 Nota'}].map(({v,l})=>
+          React.createElement('button',{key:v,onClick:()=>setType(v),style:{flex:1,padding:'7px 2px',fontSize:11,fontWeight:600,borderRadius:'var(--rs)',border:`1px solid ${type===v?'var(--accent)':'var(--border)'}`,background:type===v?'var(--accent-lo)':'var(--surface2)',color:type===v?'var(--accent)':'var(--muted)',cursor:'pointer',fontFamily:'var(--font)'}},l)
+        )
+      ),
+      React.createElement('input',{className:'input',value:text,onChange:e=>setText(e.target.value),onKeyDown:e=>e.key==='Enter'&&save(),placeholder:{task:'¿Qué tienes que hacer?',expense:'Descripción del gasto...',income:'Descripción del ingreso...',note:'Título o contenido...'}[type],autoFocus:true}),
+      (type==='expense'||type==='income')&&React.createElement('div',{className:'grid-2'},
+        React.createElement(FG,{label:'Importe (€)'},React.createElement('input',{type:'number',className:'input',value:amount,onChange:e=>setAmount(e.target.value),placeholder:'0.00'})),
+        React.createElement(FG,{label:'Categoría'},
+          React.createElement('select',{className:'input',value:catId,onChange:e=>setCatId(e.target.value)},
+            React.createElement('option',{value:''},'Sin categoría'),
+            (type==='expense'?expCats:incCats).map(c=>React.createElement('option',{key:c.id,value:c.id},c.icon+' '+c.name))
+          )
+        )
+      ),
+      React.createElement('div',{className:'modal-footer'},
+        React.createElement('button',{className:'btn btn-ghost',onClick:onClose},'Cancelar'),
+        React.createElement('button',{className:'btn btn-primary',onClick:save,disabled:saving},
+          saving?'Guardando...':React.createElement('span',{style:{display:'flex',alignItems:'center',gap:6}},React.createElement(Svg,{icon:'zap',size:14}),'Guardar')
+        )
+      )
+    )
+  );
+};
+
+// ─── AUTH PAGE ────────────────────────────────────────────────────────────────
+const AuthPage = ({ onAuth }) => {
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError(''); setMsg('');
+    try {
+      if (mode==='signup') {
+        const { error } = await sb.auth.signUp({email, password:pass});
+        if(error) throw error;
+        setMsg('Revisa tu email para confirmar tu cuenta.');
+      } else {
+        const { data, error } = await sb.auth.signInWithPassword({email, password:pass});
+        if(error) throw error;
+        onAuth(data.user);
+      }
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  return React.createElement('div',{className:'auth-wrap'},
+    React.createElement('div',{className:'auth-bg'}),
+    React.createElement('div',{className:'auth-box'},
+      React.createElement('div',{className:'auth-logo'},
+        React.createElement('div',{className:'auth-logo-icon'},'⚡'),
+        React.createElement('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:'-0.02em'}},'LifeOS'),
+        React.createElement('p',{style:{color:'var(--muted)',fontSize:14,marginTop:5}},'Tu sistema operativo personal')
+      ),
+      React.createElement('div',{className:'auth-card'},
+        React.createElement('h2',{style:{fontSize:18,fontWeight:700,marginBottom:20}},mode==='login'?'Acceder':'Crear cuenta'),
+        React.createElement('form',{className:'auth-form',onSubmit:submit},
+          React.createElement(FG,{label:'Email'},
+            React.createElement('input',{type:'email',className:'input',value:email,onChange:e=>setEmail(e.target.value),placeholder:'tu@email.com',required:true,autoComplete:'email'})
+          ),
+          React.createElement(FG,{label:'Contraseña'},
+            React.createElement('input',{type:'password',className:'input',value:pass,onChange:e=>setPass(e.target.value),placeholder:'••••••••',required:true})
+          ),
+          error&&React.createElement('div',{className:'alert alert-red',style:{margin:0}},error),
+          msg&&React.createElement('div',{className:'alert alert-green',style:{margin:0}},msg),
+          React.createElement('button',{type:'submit',className:'btn btn-primary',style:{width:'100%',justifyContent:'center'},disabled:loading},
+            loading?'Cargando...':mode==='login'?'Entrar':'Crear cuenta'
+          )
+        ),
+        React.createElement('div',{style:{marginTop:20,textAlign:'center',borderTop:'1px solid var(--border)',paddingTop:18}},
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>{setMode(m=>m==='login'?'signup':'login');setError('');setMsg('');},style:{fontSize:13}},
+            mode==='login'?'¿Sin cuenta? Regístrate':'¿Ya tienes cuenta? Accede'
+          )
+        )
+      ),
+      React.createElement('p',{style:{textAlign:'center',marginTop:16,color:'var(--dim)',fontSize:11,fontFamily:'var(--mono)'}},'Tus datos viven solo en tu Supabase.')
+    )
+  );
+};
+
+// ─── NO CONFIG SCREEN ─────────────────────────────────────────────────────────
+const ConfigScreen = () =>
+  React.createElement('div',{className:'auth-wrap'},
+    React.createElement('div',{className:'auth-bg'}),
+    React.createElement('div',{className:'auth-box'},
+      React.createElement('div',{className:'auth-logo'},
+        React.createElement('div',{className:'auth-logo-icon'},'⚡'),
+        React.createElement('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:'-0.02em'}},'LifeOS'),
+      ),
+      React.createElement('div',{className:'auth-card'},
+        React.createElement('div',{style:{marginBottom:16,padding:'12px 14px',background:'var(--gold-lo)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'var(--rs)',fontSize:13,color:'var(--gold)'}},'⚡ Configura tu conexión a Supabase para empezar'),
+        React.createElement('p',{style:{color:'var(--muted)',fontSize:14,marginBottom:16,lineHeight:1.6}},'Edita el archivo HTML y reemplaza las constantes al inicio del script:'),
+        React.createElement('div',{style:{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--rs)',padding:'14px',fontFamily:'var(--mono)',fontSize:12,color:'var(--green)',lineHeight:1.8}},
+          `const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co';`,React.createElement('br'),
+          `const SUPABASE_KEY = 'TU_ANON_KEY_AQUI';`
+        ),
+        React.createElement('p',{style:{color:'var(--dim)',fontSize:12,marginTop:14,lineHeight:1.6}},'Encuentra estos valores en: Supabase → Project Settings → API')
+      )
+    )
+  );
+
+// ─── LAYOUT ───────────────────────────────────────────────────────────────────
+const NAV = [
+  { id:'hoy', icon:'home', label:'Hoy' },
+  { id:'tareas', icon:'check', label:'Tareas' },
+  { id:'finanzas', icon:'dollar', label:'Finanzas' },
+  { id:'metas', icon:'target', label:'Metas' },
+  { id:'notas', icon:'note', label:'Notas' },
+];
+
+const AppLayout = ({ user, signOut }) => {
+  const [page, setPage] = useState('hoy');
+  const [refresh, setRefresh] = useState(0);
+  const [capture, setCapture] = useState(false);
+
+  const ctx = { user, refresh, setRefresh };
+
+  const PAGES = { hoy: PageHoy, tareas: PageTareas, finanzas: PageFinanzas, metas: PageMetas, notas: PageNotas };
+  const CurrentPage = PAGES[page] || PageHoy;
+
+  // Keyboard shortcut
+  useEffect(() => {
+    const handler = (e) => { if(e.key===' '&&e.target===document.body){ e.preventDefault(); setCapture(true); } };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  return React.createElement(AppCtx.Provider, { value: ctx },
+    React.createElement('div', { style:{display:'flex'} },
+      // Sidebar
+      React.createElement('aside', { className:'sidebar' },
+        React.createElement('div', { className:'logo' },
+          React.createElement('div', { className:'logo-icon' }, '⚡'),
+          React.createElement('span', { className:'logo-text' }, 'LifeOS')
+        ),
+        React.createElement('div', { style:{padding:'12px'} },
+          React.createElement('button', { className:'quick-btn', onClick:()=>setCapture(true) },
+            React.createElement(Svg, {icon:'plus',size:14}),
+            React.createElement('span', null, 'Captura rápida')
+          )
+        ),
+        React.createElement('nav', { className:'nav-section' },
+          NAV.map(n=>
+            React.createElement('button', {
+              key:n.id, className:`nav-btn ${page===n.id?'active':''}`,
+              onClick:()=>setPage(n.id)
+            },
+              React.createElement('span', {className:'nav-icon'}, React.createElement(Svg,{icon:n.icon,size:16})),
+              React.createElement('span', {className:'nav-label'}, n.label)
+            )
+          )
+        ),
+        React.createElement('div', { className:'sidebar-footer' },
+          React.createElement('button', { className:'signout-btn', onClick:signOut },
+            React.createElement(Svg, {icon:'logout',size:14}),
+            React.createElement('span', null, 'Cerrar sesión')
+          )
+        )
+      ),
+      // Main
+      React.createElement('main', { className:'main' },
+        React.createElement('div', { className:'page', key:page },
+          React.createElement(CurrentPage)
+        )
+      )
+    ),
+    React.createElement(QuickCapture, { open:capture, onClose:()=>setCapture(false) })
+  );
+};
+
+// ─── ROOT APP ─────────────────────────────────────────────────────────────────
+const App = () => {
+  const [user, setUser] = useState(undefined); // undefined = loading
+  const notConfigured = SUPABASE_URL.includes('TU_PROYECTO') || !sb;
+
+  useEffect(() => {
+    if (notConfigured) { setUser(null); return; }
+    sb.auth.getSession().then(({ data }) => setUser(data.session?.user || null));
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_, session) => setUser(session?.user || null));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (user === undefined) return React.createElement('div',{className:'loading-screen'},
+    React.createElement('div',{className:'spinner'}),
+    React.createElement('span',{style:{color:'var(--muted)',fontSize:13,fontFamily:'var(--mono)'}},'Cargando...')
+  );
+
+  if (notConfigured) return React.createElement(ConfigScreen);
+  if (!user) return React.createElement(AuthPage, { onAuth: setUser });
+  return React.createElement(AppLayout, { user, signOut: ()=>sb.auth.signOut().then(()=>setUser(null)) });
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 </script>
 </body>
 </html>
